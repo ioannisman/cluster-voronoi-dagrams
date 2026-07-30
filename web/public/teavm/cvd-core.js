@@ -902,7 +902,7 @@ cw_WebClassifyMain_$callClinit = () => {
 },
 cw_WebClassifyMain_main = var$1 => {
     cw_WebClassifyMain_$callClinit();
-    cw_WebClassifyMain_installApi$js_body$_71();
+    cw_WebClassifyMain_installApi$js_body$_72();
 },
 cw_WebClassifyMain_clearSelection = () => {
     cw_WebClassifyMain_$callClinit();
@@ -1230,7 +1230,7 @@ cw_WebClassifyMain__clinit_ = () => {
     cw_WebClassifyMain_ellipseStarts = $rt_createIntArray(0);
     cw_WebClassifyMain_overlayCount = 0;
 },
-cw_WebClassifyMain_installApi$js_body$_71 = () => {
+cw_WebClassifyMain_installApi$js_body$_72 = () => {
     globalThis.cvdCore = { renderFrame : function(w, h) {
         cw_WebClassifyMain_computeFrame$jsocb$_0(w, h);
         var argb = cw_WebClassifyMain_lastArgb$jsocb$_1();
@@ -1301,19 +1301,21 @@ cw_WebClassifyMain_installApi$js_body$_71 = () => {
     }, selectHandle : function(index) {
         cw_WebClassifyMain_selectHandle$jsocb$_51(index);
     }, cycleSelectedMember : function(delta) {
-        cw_WebClassifyMain_cycleSelectedMember$jsocb$_52(delta);
+        return cw_WebClassifyMain_cycleSelectedMember$jsocb$_52(delta);
+    }, cycleSelectedCluster : function(delta) {
+        return cw_WebClassifyMain_cycleSelectedCluster$jsocb$_53(delta);
     }, clearSelection : function() {
-        cw_WebClassifyMain_clearSelection$jsocb$_53();
+        cw_WebClassifyMain_clearSelection$jsocb$_54();
     }, addMemberAt : function(worldX, worldY) {
-        return cw_WebClassifyMain_addMemberAt$jsocb$_54(worldX, worldY);
+        return cw_WebClassifyMain_addMemberAt$jsocb$_55(worldX, worldY);
     }, removeMember : function() {
-        return cw_WebClassifyMain_removeMember$jsocb$_55();
+        return cw_WebClassifyMain_removeMember$jsocb$_56();
     }, addCluster : function() {
-        return cw_WebClassifyMain_addCluster$jsocb$_56();
+        return cw_WebClassifyMain_addCluster$jsocb$_57();
     }, removeCluster : function() {
-        return cw_WebClassifyMain_removeCluster$jsocb$_57();
+        return cw_WebClassifyMain_removeCluster$jsocb$_58();
     }, loadSceneJson : function(json) {
-        return cw_WebClassifyMain_loadSceneJson$jsocb$_58(json);
+        return cw_WebClassifyMain_loadSceneJson$jsocb$_59(json);
     } };
 },
 cw_WebClassifyMain_handleClusters$jsocb$_8 = () => {
@@ -1342,7 +1344,37 @@ cw_WebClassifyMain_overlayRadius$jsocb$_37 = () => {
     cw_WebClassifyMain_$callClinit();
     return otji_JS_wrap(cw_WebClassifyMain_overlayRadius);
 },
-cw_WebClassifyMain_addCluster$jsocb$_56 = () => {
+cw_WebClassifyMain_lastError$jsocb$_20 = () => {
+    cw_WebClassifyMain_$callClinit();
+    return $rt_ustr(cw_WebClassifyMain_lastError);
+},
+cw_WebClassifyMain_ellipseStarts$jsocb$_40 = () => {
+    cw_WebClassifyMain_$callClinit();
+    return otji_JS_wrap0(cw_WebClassifyMain_ellipseStarts);
+},
+cw_WebClassifyMain_overlayMembers$jsocb$_32 = () => {
+    cw_WebClassifyMain_$callClinit();
+    return otji_JS_wrap0(cw_WebClassifyMain_overlayMembers);
+},
+cw_WebClassifyMain_activeClusterIndex$jsocb$_22 = () => {
+    cw_WebClassifyMain_$callClinit();
+    return cw_WebClassifyMain_selectedClusterIndex;
+},
+cw_WebClassifyMain_setNearestNeighborK$jsocb$_46 = var$1 => {
+    let var$2;
+    cw_WebClassifyMain_$callClinit();
+    var$2 = var$1;
+    if (var$2 >= 1 && var$2 <= 32) {
+        cw_WebClassifyMain_sceneSnapshot.$nearestNeighborK = var$2;
+        cw_WebClassifyMain_lastError = $rt_s(4);
+        var$1 = $rt_s(4);
+    } else {
+        var$1 = $rt_s(11);
+        cw_WebClassifyMain_lastError = var$1;
+    }
+    return $rt_ustr(var$1);
+},
+cw_WebClassifyMain_addCluster$jsocb$_57 = () => {
     let var$1, var$2, var$3, var$4, var$5, var$6, var$7, var$8, var$9, var$10, var$11, var$12, var$13, var$14, var$15, var$16, var$17, var$18;
     cw_WebClassifyMain_$callClinit();
     var$1 = cw_WebClassifyMain_sceneSnapshot;
@@ -1354,7 +1386,7 @@ cw_WebClassifyMain_addCluster$jsocb$_56 = () => {
         var$1 = cw_WebClassifyMain_sceneSnapshot.$clusters0;
         var$2 = var$1.$size0;
         if (var$2 >= 32) {
-            var$1 = $rt_s(11);
+            var$1 = $rt_s(12);
             cw_WebClassifyMain_lastError = var$1;
         } else {
             var$3 = (360 * var$2 | 0) * 0.618033988749895 % 360.0;
@@ -1430,87 +1462,6 @@ cw_WebClassifyMain_addCluster$jsocb$_56 = () => {
     }
     return $rt_ustr(var$1);
 },
-cw_WebClassifyMain_removeCluster$jsocb$_57 = () => {
-    let var$1, var$2, var$3;
-    cw_WebClassifyMain_$callClinit();
-    var$1 = cw_WebClassifyMain_sceneSnapshot.$clusters0;
-    if (var$1.$size0 <= 1) {
-        var$1 = $rt_s(12);
-        cw_WebClassifyMain_lastError = var$1;
-    } else {
-        ju_ArrayList_remove(var$1, cw_WebClassifyMain_activeClusterIndex);
-        var$2 = cw_WebClassifyMain_activeClusterIndex;
-        var$3 = cw_WebClassifyMain_sceneSnapshot.$clusters0.$size0;
-        if (var$2 >= var$3)
-            cw_WebClassifyMain_activeClusterIndex = var$3 - 1 | 0;
-        cw_WebClassifyMain_selectedClusterIndex = (-1);
-        cw_WebClassifyMain_selectedMemberIndex = (-1);
-        cw_WebClassifyMain_selectedHandleIndex = (-1);
-        cw_WebClassifyMain_lastError = $rt_s(4);
-        var$1 = $rt_s(4);
-    }
-    return $rt_ustr(var$1);
-},
-cw_WebClassifyMain_lastError$jsocb$_20 = () => {
-    cw_WebClassifyMain_$callClinit();
-    return $rt_ustr(cw_WebClassifyMain_lastError);
-},
-cw_WebClassifyMain_ellipseStarts$jsocb$_40 = () => {
-    cw_WebClassifyMain_$callClinit();
-    return otji_JS_wrap0(cw_WebClassifyMain_ellipseStarts);
-},
-cw_WebClassifyMain_overlayMembers$jsocb$_32 = () => {
-    cw_WebClassifyMain_$callClinit();
-    return otji_JS_wrap0(cw_WebClassifyMain_overlayMembers);
-},
-cw_WebClassifyMain_removeMember$jsocb$_55 = () => {
-    let var$1, var$2, var$3, var$4;
-    cw_WebClassifyMain_$callClinit();
-    if (ju_AbstractCollection_isEmpty(cw_WebClassifyMain_sceneSnapshot.$clusters0)) {
-        var$1 = $rt_s(13);
-        cw_WebClassifyMain_lastError = var$1;
-    } else {
-        var$2 = cw_WebClassifyMain_selectedClusterIndex;
-        if (var$2 < 0)
-            var$2 = cw_WebClassifyMain_activeClusterIndex;
-        var$3 = cw_WebClassifyMain_selectedMemberIndex;
-        var$1 = ju_ArrayList_get(cw_WebClassifyMain_sceneSnapshot.$clusters0, var$2);
-        if (!(var$3 >= 0 && var$3 < cm_ClusterSite_size(var$1)))
-            var$3 = cm_ClusterSite_size(var$1) - 1 | 0;
-        if (cm_ClusterSite_size(var$1) <= 1) {
-            var$1 = $rt_s(14);
-            cw_WebClassifyMain_lastError = var$1;
-        } else {
-            ju_ArrayList_remove(var$1.$members, var$3);
-            cw_WebClassifyMain_selectedClusterIndex = var$2;
-            var$4 = jl_Math_min(var$3, cm_ClusterSite_size(var$1) - 1 | 0);
-            cw_WebClassifyMain_selectedMemberIndex = var$4;
-            cw_WebClassifyMain_selectedHandleIndex = c_HandleVisibility_primaryHandleIndex(ju_ArrayList_get(var$1.$members, var$4));
-            cw_WebClassifyMain_activeClusterIndex = var$2;
-            cw_WebClassifyMain_lastError = $rt_s(4);
-            var$1 = $rt_s(4);
-        }
-    }
-    return $rt_ustr(var$1);
-},
-cw_WebClassifyMain_activeClusterIndex$jsocb$_22 = () => {
-    cw_WebClassifyMain_$callClinit();
-    return cw_WebClassifyMain_activeClusterIndex;
-},
-cw_WebClassifyMain_setNearestNeighborK$jsocb$_46 = var$1 => {
-    let var$2;
-    cw_WebClassifyMain_$callClinit();
-    var$2 = var$1;
-    if (var$2 >= 1 && var$2 <= 32) {
-        cw_WebClassifyMain_sceneSnapshot.$nearestNeighborK = var$2;
-        cw_WebClassifyMain_lastError = $rt_s(4);
-        var$1 = $rt_s(4);
-    } else {
-        var$1 = $rt_s(15);
-        cw_WebClassifyMain_lastError = var$1;
-    }
-    return $rt_ustr(var$1);
-},
 cw_WebClassifyMain_lastOwners$jsocb$_2 = () => {
     cw_WebClassifyMain_$callClinit();
     return otji_JS_wrap0(cw_WebClassifyMain_lastOwners);
@@ -1536,12 +1487,16 @@ cw_WebClassifyMain_handleVisibleFlags$jsocb$_11 = () => {
 cw_WebClassifyMain_activeMemberCount$jsocb$_23 = () => {
     let var$1, var$2;
     cw_WebClassifyMain_$callClinit();
-    if (ju_AbstractCollection_isEmpty(cw_WebClassifyMain_sceneSnapshot.$clusters0))
+    a: {
+        var$1 = cw_WebClassifyMain_selectedClusterIndex;
+        if (var$1 >= 0) {
+            var$2 = cw_WebClassifyMain_sceneSnapshot.$clusters0;
+            if (var$1 < var$2.$size0) {
+                var$1 = cm_ClusterSite_size(ju_ArrayList_get(var$2, var$1));
+                break a;
+            }
+        }
         var$1 = 0;
-    else {
-        var$2 = cw_WebClassifyMain_sceneSnapshot.$clusters0;
-        var$1 = cw_WebClassifyMain_activeClusterIndex;
-        var$1 = cm_ClusterSite_size(ju_ArrayList_get(var$2, var$1));
     }
     return var$1;
 },
@@ -1549,32 +1504,27 @@ cw_WebClassifyMain_lastHeight$jsocb$_5 = () => {
     cw_WebClassifyMain_$callClinit();
     return cw_WebClassifyMain_lastHeight;
 },
-cw_WebClassifyMain_addMemberAt$jsocb$_54 = (var$1, var$2) => {
-    let var$3, var$4, var$5;
+cw_WebClassifyMain_removeCluster$jsocb$_58 = () => {
+    let var$1, var$2, var$3;
     cw_WebClassifyMain_$callClinit();
-    var$3 = var$1;
-    var$4 = var$2;
-    var$1 = cw_WebClassifyMain_sceneSnapshot;
-    var$1 = cm_MetricMemberCompatibility_invalidNewMemberMessage(var$1.$metricKind, var$1.$siteMemberKind);
-    if (ju_Optional_isPresent(var$1)) {
-        var$1 = ju_Optional_get(var$1);
-        cw_WebClassifyMain_lastError = var$1;
-    } else if (ju_AbstractCollection_isEmpty(cw_WebClassifyMain_sceneSnapshot.$clusters0)) {
-        var$1 = $rt_s(16);
+    var$1 = cw_WebClassifyMain_sceneSnapshot.$clusters0;
+    if (var$1.$size0 <= 1) {
+        var$1 = $rt_s(13);
         cw_WebClassifyMain_lastError = var$1;
     } else {
-        var$1 = cw_WebClassifyMain_sceneSnapshot.$clusters0;
-        var$5 = cw_WebClassifyMain_activeClusterIndex;
-        var$1 = ju_ArrayList_get(var$1, var$5);
-        if (cm_ClusterSite_size(var$1) >= 32) {
-            var$1 = $rt_s(17);
+        var$2 = cw_WebClassifyMain_selectedClusterIndex;
+        if (var$2 < 0) {
+            var$1 = $rt_s(14);
             cw_WebClassifyMain_lastError = var$1;
         } else {
-            var$2 = cm_SiteMemberFactory_createDefault(cw_WebClassifyMain_sceneSnapshot.$siteMemberKind, cw_WebClassifyMain_activeClusterIndex, cm_ClusterSite_size(var$1), cg_Vector_xy(var$3, var$4));
-            ju_ArrayList_add(var$1.$members, var$2);
-            cw_WebClassifyMain_selectedClusterIndex = cw_WebClassifyMain_activeClusterIndex;
-            cw_WebClassifyMain_selectedMemberIndex = cm_ClusterSite_size(var$1) - 1 | 0;
-            cw_WebClassifyMain_selectedHandleIndex = c_HandleVisibility_primaryHandleIndex(var$2);
+            ju_ArrayList_remove(var$1, var$2);
+            var$2 = cw_WebClassifyMain_activeClusterIndex;
+            var$3 = cw_WebClassifyMain_sceneSnapshot.$clusters0.$size0;
+            if (var$2 >= var$3)
+                cw_WebClassifyMain_activeClusterIndex = var$3 - 1 | 0;
+            cw_WebClassifyMain_selectedClusterIndex = (-1);
+            cw_WebClassifyMain_selectedMemberIndex = (-1);
+            cw_WebClassifyMain_selectedHandleIndex = (-1);
             cw_WebClassifyMain_lastError = $rt_s(4);
             var$1 = $rt_s(4);
         }
@@ -1595,7 +1545,7 @@ cw_WebClassifyMain_setNeighborOrderName$jsocb$_45 = var$1 => {
             $$je = $rt_wrapException($$e);
             if ($$je instanceof jl_IllegalArgumentException) {
                 var$2 = jl_StringBuilder__init_();
-                jl_StringBuilder_append(jl_StringBuilder_append(var$2, $rt_s(18)), var$1);
+                jl_StringBuilder_append(jl_StringBuilder_append(var$2, $rt_s(15)), var$1);
                 var$2 = jl_StringBuilder_toString(var$2);
                 cw_WebClassifyMain_lastError = var$2;
                 break a;
@@ -1609,6 +1559,41 @@ cw_WebClassifyMain_setNeighborOrderName$jsocb$_45 = var$1 => {
 cw_WebClassifyMain_lastMembers$jsocb$_3 = () => {
     cw_WebClassifyMain_$callClinit();
     return otji_JS_wrap0(cw_WebClassifyMain_lastMembers);
+},
+cw_WebClassifyMain_addMemberAt$jsocb$_55 = (var$1, var$2) => {
+    let var$3, var$4, var$5;
+    cw_WebClassifyMain_$callClinit();
+    var$3 = var$1;
+    var$4 = var$2;
+    var$1 = cw_WebClassifyMain_sceneSnapshot;
+    var$1 = cm_MetricMemberCompatibility_invalidNewMemberMessage(var$1.$metricKind, var$1.$siteMemberKind);
+    if (ju_Optional_isPresent(var$1)) {
+        var$1 = ju_Optional_get(var$1);
+        cw_WebClassifyMain_lastError = var$1;
+    } else {
+        var$5 = cw_WebClassifyMain_selectedClusterIndex;
+        if (var$5 < 0) {
+            var$1 = $rt_s(16);
+            cw_WebClassifyMain_lastError = var$1;
+        } else {
+            var$1 = ju_ArrayList_get(cw_WebClassifyMain_sceneSnapshot.$clusters0, var$5);
+            if (cm_ClusterSite_size(var$1) >= 32) {
+                var$1 = $rt_s(17);
+                cw_WebClassifyMain_lastError = var$1;
+            } else {
+                var$5 = cw_WebClassifyMain_selectedClusterIndex;
+                var$2 = cm_SiteMemberFactory_createDefault(cw_WebClassifyMain_sceneSnapshot.$siteMemberKind, var$5, cm_ClusterSite_size(var$1), cg_Vector_xy(var$3, var$4));
+                ju_ArrayList_add(var$1.$members, var$2);
+                cw_WebClassifyMain_selectedClusterIndex = var$5;
+                cw_WebClassifyMain_selectedMemberIndex = cm_ClusterSite_size(var$1) - 1 | 0;
+                cw_WebClassifyMain_selectedHandleIndex = c_HandleVisibility_primaryHandleIndex(var$2);
+                cw_WebClassifyMain_activeClusterIndex = var$5;
+                cw_WebClassifyMain_lastError = $rt_s(4);
+                var$1 = $rt_s(4);
+            }
+        }
+    }
+    return $rt_ustr(var$1);
 },
 cw_WebClassifyMain_overlayClusters$jsocb$_31 = () => {
     cw_WebClassifyMain_$callClinit();
@@ -1628,7 +1613,7 @@ cw_WebClassifyMain_setWorldView$jsocb$_48 = (var$1, var$2, var$3, var$4) => {
         cw_WebClassifyMain_worldMaxY = var$8;
         cw_WebClassifyMain_lastError = $rt_s(4);
     } else
-        cw_WebClassifyMain_lastError = $rt_s(19);
+        cw_WebClassifyMain_lastError = $rt_s(18);
 },
 cw_WebClassifyMain_setShadingEnabled$jsocb$_47 = var$1 => {
     cw_WebClassifyMain_$callClinit();
@@ -1642,42 +1627,36 @@ cw_WebClassifyMain_overlayBx$jsocb$_35 = () => {
     cw_WebClassifyMain_$callClinit();
     return otji_JS_wrap(cw_WebClassifyMain_overlayBx);
 },
+cw_WebClassifyMain_removeMember$jsocb$_56 = () => {
+    let var$1, var$2, var$3, var$4;
+    cw_WebClassifyMain_$callClinit();
+    var$1 = cw_WebClassifyMain_selectedClusterIndex;
+    if (var$1 >= 0 && cw_WebClassifyMain_selectedMemberIndex >= 0) {
+        var$2 = ju_ArrayList_get(cw_WebClassifyMain_sceneSnapshot.$clusters0, var$1);
+        if (cm_ClusterSite_size(var$2) <= 1) {
+            var$2 = $rt_s(19);
+            cw_WebClassifyMain_lastError = var$2;
+        } else {
+            var$3 = cw_WebClassifyMain_selectedClusterIndex;
+            var$4 = cw_WebClassifyMain_selectedMemberIndex;
+            ju_ArrayList_remove(var$2.$members, var$4);
+            cw_WebClassifyMain_selectedClusterIndex = var$3;
+            var$1 = jl_Math_min(var$4, cm_ClusterSite_size(var$2) - 1 | 0);
+            cw_WebClassifyMain_selectedMemberIndex = var$1;
+            cw_WebClassifyMain_selectedHandleIndex = c_HandleVisibility_primaryHandleIndex(ju_ArrayList_get(var$2.$members, var$1));
+            cw_WebClassifyMain_activeClusterIndex = var$3;
+            cw_WebClassifyMain_lastError = $rt_s(4);
+            var$2 = $rt_s(4);
+        }
+    } else {
+        var$2 = $rt_s(20);
+        cw_WebClassifyMain_lastError = var$2;
+    }
+    return $rt_ustr(var$2);
+},
 cw_WebClassifyMain_selectedMemberIndex$jsocb$_26 = () => {
     cw_WebClassifyMain_$callClinit();
     return cw_WebClassifyMain_selectedMemberIndex;
-},
-cw_WebClassifyMain_cycleSelectedMember$jsocb$_52 = var$1 => {
-    let var$2, var$3, var$4, var$5;
-    cw_WebClassifyMain_$callClinit();
-    var$2 = var$1;
-    if (!ju_AbstractCollection_isEmpty(cw_WebClassifyMain_sceneSnapshot.$clusters0)) {
-        var$3 = cw_WebClassifyMain_activeClusterIndex;
-        if (!(var$3 >= 0 && var$3 < cw_WebClassifyMain_sceneSnapshot.$clusters0.$size0))
-            cw_WebClassifyMain_activeClusterIndex = 0;
-        var$1 = cw_WebClassifyMain_sceneSnapshot.$clusters0;
-        var$3 = cw_WebClassifyMain_activeClusterIndex;
-        var$1 = ju_ArrayList_get(var$1, var$3);
-        var$3 = cm_ClusterSite_size(var$1);
-        if (var$3 > 0) {
-            a: {
-                var$4 = cw_WebClassifyMain_selectedClusterIndex;
-                var$5 = cw_WebClassifyMain_activeClusterIndex;
-                if (var$4 == var$5) {
-                    var$4 = cw_WebClassifyMain_selectedMemberIndex;
-                    if (var$4 >= 0)
-                        break a;
-                }
-                var$4 = var$2 <= 0 ? 0 : (-1);
-            }
-            var$2 = var$4 + var$2 | 0;
-            var$4 = var$2 % var$3 | 0;
-            if ((var$2 ^ var$3) < 0 && var$4)
-                var$4 = var$4 + var$3 | 0;
-            cw_WebClassifyMain_selectedClusterIndex = var$5;
-            cw_WebClassifyMain_selectedMemberIndex = var$4;
-            cw_WebClassifyMain_selectedHandleIndex = c_HandleVisibility_primaryHandleIndex(ju_ArrayList_get(var$1.$members, var$4));
-        }
-    }
 },
 cw_WebClassifyMain_ellipseXs$jsocb$_38 = () => {
     cw_WebClassifyMain_$callClinit();
@@ -1736,10 +1715,35 @@ cw_WebClassifyMain_beginHandleDrag$jsocb$_42 = var$1 => {
 cw_WebClassifyMain_selectedHandleIndex$jsocb$_27 = () => {
     cw_WebClassifyMain_$callClinit();
     return cw_WebClassifyMain_selectedHandleIndex;
-};
-let cw_WebClassifyMain_nearestNeighborK$jsocb$_18 = () => {
+},
+cw_WebClassifyMain_nearestNeighborK$jsocb$_18 = () => {
     cw_WebClassifyMain_$callClinit();
     return cw_WebClassifyMain_sceneSnapshot.$nearestNeighborK;
+};
+let cw_WebClassifyMain_cycleSelectedMember$jsocb$_52 = var$1 => {
+    let var$2, var$3;
+    cw_WebClassifyMain_$callClinit();
+    var$2 = var$1;
+    var$3 = cw_WebClassifyMain_selectedClusterIndex;
+    if (var$3 >= 0 && cw_WebClassifyMain_selectedMemberIndex >= 0) {
+        var$1 = ju_ArrayList_get(cw_WebClassifyMain_sceneSnapshot.$clusters0, var$3);
+        var$3 = cm_ClusterSite_size(var$1);
+        if (var$3 <= 0) {
+            var$1 = $rt_s(21);
+            cw_WebClassifyMain_lastError = var$1;
+        } else {
+            var$2 = jl_Math_floorMod(cw_WebClassifyMain_selectedMemberIndex + var$2 | 0, var$3);
+            cw_WebClassifyMain_selectedMemberIndex = var$2;
+            cw_WebClassifyMain_selectedHandleIndex = c_HandleVisibility_primaryHandleIndex(ju_ArrayList_get(var$1.$members, var$2));
+            cw_WebClassifyMain_activeClusterIndex = cw_WebClassifyMain_selectedClusterIndex;
+            cw_WebClassifyMain_lastError = $rt_s(4);
+            var$1 = $rt_s(4);
+        }
+    } else {
+        var$1 = $rt_s(22);
+        cw_WebClassifyMain_lastError = var$1;
+    }
+    return $rt_ustr(var$1);
 },
 cw_WebClassifyMain_moveHandle$jsocb$_41 = (var$1, var$2, var$3, var$4) => {
     let var$5, var$6, var$7, var$8, var$9, var$10, var$11, var$12;
@@ -1779,6 +1783,10 @@ cw_WebClassifyMain_clusterCount$jsocb$_21 = () => {
     cw_WebClassifyMain_$callClinit();
     return cw_WebClassifyMain_sceneSnapshot.$clusters0.$size0;
 },
+cw_WebClassifyMain_clearSelection$jsocb$_54 = () => {
+    cw_WebClassifyMain_$callClinit();
+    cw_WebClassifyMain_clearSelection();
+},
 cw_WebClassifyMain_handleGs$jsocb$_13 = () => {
     cw_WebClassifyMain_$callClinit();
     return otji_JS_wrap(cw_WebClassifyMain_handleGs);
@@ -1786,37 +1794,6 @@ cw_WebClassifyMain_handleGs$jsocb$_13 = () => {
 cw_WebClassifyMain_overlayAy$jsocb$_34 = () => {
     cw_WebClassifyMain_$callClinit();
     return otji_JS_wrap(cw_WebClassifyMain_overlayAy);
-},
-cw_WebClassifyMain_loadSceneJson$jsocb$_58 = var$1 => {
-    let $$je;
-    cw_WebClassifyMain_$callClinit();
-    var$1 = $rt_str(var$1);
-    a: {
-        if (var$1 !== null && !jl_String_isBlank(var$1))
-            try {
-                cw_WebClassifyMain_sceneSnapshot = cw_SceneJsonJs_parse(var$1);
-                cw_WebClassifyMain_activeClusterIndex = 0;
-                cw_WebClassifyMain_clearSelection();
-                cw_WebClassifyMain_lastError = $rt_s(4);
-                var$1 = $rt_s(4);
-                break a;
-            } catch ($$e) {
-                $$je = $rt_wrapException($$e);
-                if ($$je instanceof ci_SceneJsonException) {
-                    var$1 = $$je;
-                    var$1 = var$1.$message;
-                    if (var$1 === null)
-                        var$1 = $rt_s(20);
-                    cw_WebClassifyMain_lastError = var$1;
-                    break a;
-                } else {
-                    throw $$e;
-                }
-            }
-        var$1 = $rt_s(21);
-        cw_WebClassifyMain_lastError = var$1;
-    }
-    return $rt_ustr(var$1);
 },
 cw_WebClassifyMain_metricKindName$jsocb$_16 = () => {
     cw_WebClassifyMain_$callClinit();
@@ -1847,25 +1824,68 @@ cw_WebClassifyMain_overlayAx$jsocb$_33 = () => {
     return otji_JS_wrap(cw_WebClassifyMain_overlayAx);
 },
 cw_WebClassifyMain_setActiveClusterIndex$jsocb$_49 = var$1 => {
-    let var$2;
     cw_WebClassifyMain_$callClinit();
-    var$2 = var$1;
-    if (var$2 >= 0 && var$2 < cw_WebClassifyMain_sceneSnapshot.$clusters0.$size0) {
-        if (cw_WebClassifyMain_activeClusterIndex != var$2) {
-            cw_WebClassifyMain_activeClusterIndex = var$2;
-            cw_WebClassifyMain_clearSelection();
-        }
-        cw_WebClassifyMain_lastError = $rt_s(4);
-        var$1 = $rt_s(4);
-    } else {
-        var$1 = $rt_s(22);
-        cw_WebClassifyMain_lastError = var$1;
-    }
-    return $rt_ustr(var$1);
+    var$1;
+    cw_WebClassifyMain_lastError = $rt_s(4);
+    return "";
 },
 cw_WebClassifyMain_neighborOrderName$jsocb$_17 = () => {
     cw_WebClassifyMain_$callClinit();
     return $rt_ustr(cw_WebClassifyMain_sceneSnapshot.$neighborOrder.$name0);
+},
+cw_WebClassifyMain_loadSceneJson$jsocb$_59 = var$1 => {
+    let $$je;
+    cw_WebClassifyMain_$callClinit();
+    var$1 = $rt_str(var$1);
+    a: {
+        if (var$1 !== null && !jl_String_isBlank(var$1))
+            try {
+                cw_WebClassifyMain_sceneSnapshot = cw_SceneJsonJs_parse(var$1);
+                cw_WebClassifyMain_activeClusterIndex = 0;
+                cw_WebClassifyMain_clearSelection();
+                cw_WebClassifyMain_lastError = $rt_s(4);
+                var$1 = $rt_s(4);
+                break a;
+            } catch ($$e) {
+                $$je = $rt_wrapException($$e);
+                if ($$je instanceof ci_SceneJsonException) {
+                    var$1 = $$je;
+                    var$1 = var$1.$message;
+                    if (var$1 === null)
+                        var$1 = $rt_s(23);
+                    cw_WebClassifyMain_lastError = var$1;
+                    break a;
+                } else {
+                    throw $$e;
+                }
+            }
+        var$1 = $rt_s(24);
+        cw_WebClassifyMain_lastError = var$1;
+    }
+    return $rt_ustr(var$1);
+},
+cw_WebClassifyMain_cycleSelectedCluster$jsocb$_53 = var$1 => {
+    let var$2, var$3, var$4;
+    cw_WebClassifyMain_$callClinit();
+    var$2 = var$1;
+    var$3 = cw_WebClassifyMain_sceneSnapshot.$clusters0.$size0;
+    if (var$3 <= 0) {
+        var$1 = $rt_s(25);
+        cw_WebClassifyMain_lastError = var$1;
+    } else {
+        var$4 = cw_WebClassifyMain_selectedClusterIndex;
+        if (var$4 < 0)
+            var$4 = 0;
+        var$2 = jl_Math_floorMod(var$4 + var$2 | 0, var$3);
+        var$1 = ju_ArrayList_get(cw_WebClassifyMain_sceneSnapshot.$clusters0, var$2);
+        cw_WebClassifyMain_selectedClusterIndex = var$2;
+        cw_WebClassifyMain_selectedMemberIndex = 0;
+        cw_WebClassifyMain_selectedHandleIndex = c_HandleVisibility_primaryHandleIndex(ju_ArrayList_get(var$1.$members, 0));
+        cw_WebClassifyMain_activeClusterIndex = var$2;
+        cw_WebClassifyMain_lastError = $rt_s(4);
+        var$1 = $rt_s(4);
+    }
+    return $rt_ustr(var$1);
 },
 cw_WebClassifyMain_handleRs$jsocb$_12 = () => {
     cw_WebClassifyMain_$callClinit();
@@ -1892,7 +1912,7 @@ cw_WebClassifyMain_setMetricKindName$jsocb$_44 = var$1 => {
                 }
             }
             var$2 = jl_StringBuilder__init_();
-            jl_StringBuilder_append(jl_StringBuilder_append(var$2, $rt_s(23)), var$1);
+            jl_StringBuilder_append(jl_StringBuilder_append(var$2, $rt_s(26)), var$1);
             var$1 = jl_StringBuilder_toString(var$2);
             cw_WebClassifyMain_lastError = var$1;
             break a;
@@ -2067,7 +2087,7 @@ cw_WebClassifyMain_computeFrame$jsocb$_0 = (var$1, var$2) => {
                     }
                 }
                 var$1 = new jl_IllegalStateException;
-                jl_Exception__init_(var$1, $rt_s(24));
+                jl_Exception__init_(var$1, $rt_s(27));
                 $rt_throw(var$1);
             }
             var$1 = ju_AbstractList$1_next(var$2);
@@ -2082,7 +2102,7 @@ cw_WebClassifyMain_computeFrame$jsocb$_0 = (var$1, var$2) => {
         $rt_throw(var$1);
     }
     var$2 = new jl_IllegalArgumentException;
-    jl_Exception__init_(var$2, $rt_s(25));
+    jl_Exception__init_(var$2, $rt_s(28));
     $rt_throw(var$2);
 },
 cw_WebClassifyMain_clusterNameAt$jsocb$_28 = var$1 => {
@@ -2146,7 +2166,7 @@ cw_WebClassifyMain_setSiteMemberKindName$jsocb$_50 = var$1 => {
                 }
             }
             var$2 = jl_StringBuilder__init_();
-            jl_StringBuilder_append(jl_StringBuilder_append(var$2, $rt_s(26)), var$1);
+            jl_StringBuilder_append(jl_StringBuilder_append(var$2, $rt_s(29)), var$1);
             var$1 = jl_StringBuilder_toString(var$2);
             cw_WebClassifyMain_lastError = var$1;
             break a;
@@ -2170,10 +2190,6 @@ cw_WebClassifyMain_overlayBy$jsocb$_36 = () => {
 cw_WebClassifyMain_handleTotal$jsocb$_15 = () => {
     cw_WebClassifyMain_$callClinit();
     return cw_WebClassifyMain_handleTotal;
-},
-cw_WebClassifyMain_clearSelection$jsocb$_53 = () => {
-    cw_WebClassifyMain_$callClinit();
-    cw_WebClassifyMain_clearSelection();
 },
 jl_ClassCastException = $rt_classWithoutFields(jl_RuntimeException),
 otp_Platform = $rt_classWithoutFields(),
@@ -2531,8 +2547,8 @@ cm_DemoScenes_defaultClusters = () => {
     var$5 = new ju_TemplateCollections$TwoElementsList;
     var$5.$first = var$3;
     var$5.$second = var$4;
-    cm_ClusterSite__init_(var$1, $rt_s(27), var$2, var$5);
-    var$6 = cm_ClusterSite__init_0($rt_s(28), cm_Rgba__init_(0.2375, 0.59375, 0.95, 1.0), ju_List_of(cm_PointMember__init_(cg_Vector_xy((-61.5), (-40.0))), cm_PointMember__init_(cg_Vector_xy(343.5, (-133.0))), cm_PointMember__init_(cg_Vector_xy(372.5, 24.0)), cm_EllipseMember__init_(cg_Vector_xy(120.0, (-40.0)), cg_Vector_xy(285.5, 320.0), cg_Vector_xy(180.0, 50.0))));
+    cm_ClusterSite__init_(var$1, $rt_s(30), var$2, var$5);
+    var$6 = cm_ClusterSite__init_0($rt_s(31), cm_Rgba__init_(0.2375, 0.59375, 0.95, 1.0), ju_List_of(cm_PointMember__init_(cg_Vector_xy((-61.5), (-40.0))), cm_PointMember__init_(cg_Vector_xy(343.5, (-133.0))), cm_PointMember__init_(cg_Vector_xy(372.5, 24.0)), cm_EllipseMember__init_(cg_Vector_xy(120.0, (-40.0)), cg_Vector_xy(285.5, 320.0), cg_Vector_xy(180.0, 50.0))));
     var$7 = new cm_ClusterSite;
     var$8 = cm_Rgba__init_(1.0, 0.3, 0.65, 1.0);
     var$9 = cm_SegmentMember__init_(cg_Vector_xy((-376.5), 12.0), cg_Vector_xy((-37.5), (-99.0)));
@@ -2547,7 +2563,7 @@ cm_DemoScenes_defaultClusters = () => {
     ju_Objects_requireNonNull(var$5);
     ju_Objects_requireNonNull(var$10);
     ju_Objects_requireNonNull(var$11);
-    cm_ClusterSite__init_(var$7, $rt_s(29), var$8, ju_TemplateCollections$ImmutableArrayList__init_($rt_wrapArray(jl_Object, [var$9, var$3, var$4, var$5, var$10, var$11])));
+    cm_ClusterSite__init_(var$7, $rt_s(32), var$8, ju_TemplateCollections$ImmutableArrayList__init_($rt_wrapArray(jl_Object, [var$9, var$3, var$4, var$5, var$10, var$11])));
     var$2 = new cm_ClusterSite;
     var$4 = cm_Rgba__init_(0.375, 0.9, 0.27, 1.0);
     var$5 = cm_DemoScenes_circle(80.0, 200.0, 83.95981181493917);
@@ -2556,7 +2572,7 @@ cm_DemoScenes_defaultClusters = () => {
     ju_Objects_requireNonNull(var$5);
     ju_Objects_requireNonNull(var$10);
     ju_Objects_requireNonNull(var$11);
-    cm_ClusterSite__init_(var$2, $rt_s(30), var$4, ju_TemplateCollections$ImmutableArrayList__init_($rt_wrapArray(jl_Object, [var$5, var$10, var$11])));
+    cm_ClusterSite__init_(var$2, $rt_s(33), var$4, ju_TemplateCollections$ImmutableArrayList__init_($rt_wrapArray(jl_Object, [var$5, var$10, var$11])));
     return ju_List_of(var$1, var$6, var$7, var$2);
 },
 cm_DemoScenes_circle = ($cx, $cy, $radius) => {
@@ -2576,7 +2592,7 @@ jl_IndexOutOfBoundsException__init_2 = () => {
 jl_IndexOutOfBoundsException__init_1 = ($this, $index) => {
     let var$2, var$3, var$4, var$5, var$6, var$7, var$8, var$9, var$10;
     var$2 = jl_StringBuilder__init_();
-    var$3 = jl_StringBuilder_append(var$2, $rt_s(31));
+    var$3 = jl_StringBuilder_append(var$2, $rt_s(34));
     var$4 = var$3.$length;
     var$5 = 1;
     if ($index < 0) {
@@ -2712,7 +2728,7 @@ jl_Enum_valueOf = ($enumType, $name) => {
     $constants = $constants;
     if ($constants === null) {
         $enumType = new jl_IllegalArgumentException;
-        jl_Exception__init_($enumType, $rt_s(32));
+        jl_Exception__init_($enumType, $rt_s(35));
         $rt_throw($enumType);
     }
     $constants = $constants.data;
@@ -2724,7 +2740,7 @@ jl_Enum_valueOf = ($enumType, $name) => {
             $enumType = jl_String_valueOf($enumType);
             var$8 = jl_String_valueOf($name);
             $name = jl_StringBuilder__init_();
-            jl_StringBuilder_append(jl_StringBuilder_append(jl_StringBuilder_append(jl_StringBuilder_append(jl_StringBuilder_append($name, $rt_s(33)), $enumType), $rt_s(34)), var$8), $rt_s(35));
+            jl_StringBuilder_append(jl_StringBuilder_append(jl_StringBuilder_append(jl_StringBuilder_append(jl_StringBuilder_append($name, $rt_s(36)), $enumType), $rt_s(37)), var$8), $rt_s(38));
             jl_Exception__init_($constant, jl_StringBuilder_toString($name));
             $rt_throw($constant);
         }
@@ -2748,7 +2764,7 @@ jl_Enum_compareTo = ($this, var$1) => {
     var$5 = jl_String_valueOf(jl_Enum_getDeclaringClass($this));
     var$1 = jl_String_valueOf(jl_Enum_getDeclaringClass(var$1));
     var$6 = jl_StringBuilder__init_();
-    jl_StringBuilder_append(jl_StringBuilder_append(jl_StringBuilder_append(jl_StringBuilder_append(var$6, $rt_s(36)), var$5), $rt_s(37)), var$1);
+    jl_StringBuilder_append(jl_StringBuilder_append(jl_StringBuilder_append(jl_StringBuilder_append(var$6, $rt_s(39)), var$5), $rt_s(40)), var$1);
     jl_Exception__init_(var$4, jl_StringBuilder_toString(var$6));
     $rt_throw(var$4);
 },
@@ -2778,11 +2794,11 @@ cm_MetricKind__init_ = (var_0, var_1) => {
 },
 cm_MetricKind__clinit_ = () => {
     let var$1, var$2, var$3;
-    cm_MetricKind_MINIMUM_DISTANCE = cm_MetricKind__init_($rt_s(38), 0);
-    cm_MetricKind_MAXIMUM_DISTANCE = cm_MetricKind__init_($rt_s(39), 1);
-    cm_MetricKind_SUM_OF_DISTANCES = cm_MetricKind__init_($rt_s(40), 2);
-    cm_MetricKind_MEAN_DISTANCE = cm_MetricKind__init_($rt_s(41), 3);
-    var$1 = cm_MetricKind__init_($rt_s(42), 4);
+    cm_MetricKind_MINIMUM_DISTANCE = cm_MetricKind__init_($rt_s(41), 0);
+    cm_MetricKind_MAXIMUM_DISTANCE = cm_MetricKind__init_($rt_s(42), 1);
+    cm_MetricKind_SUM_OF_DISTANCES = cm_MetricKind__init_($rt_s(43), 2);
+    cm_MetricKind_MEAN_DISTANCE = cm_MetricKind__init_($rt_s(44), 3);
+    var$1 = cm_MetricKind__init_($rt_s(45), 4);
     cm_MetricKind_KTH_NEAREST_DISTANCE = var$1;
     var$2 = $rt_createArray(cm_MetricKind, 5);
     var$3 = var$2.data;
@@ -2816,8 +2832,8 @@ cm_NeighborOrder__init_ = (var_0, var_1) => {
 },
 cm_NeighborOrder__clinit_ = () => {
     let var$1, var$2, var$3;
-    cm_NeighborOrder_NEAREST = cm_NeighborOrder__init_($rt_s(43), 0);
-    var$1 = cm_NeighborOrder__init_($rt_s(44), 1);
+    cm_NeighborOrder_NEAREST = cm_NeighborOrder__init_($rt_s(46), 0);
+    var$1 = cm_NeighborOrder__init_($rt_s(47), 1);
     cm_NeighborOrder_FARTHEST = var$1;
     var$2 = $rt_createArray(cm_NeighborOrder, 2);
     var$3 = var$2.data;
@@ -2852,7 +2868,7 @@ cm_SiteMemberKind__init_ = (var_0, var_1) => {
 cm_SiteMemberKind__clinit_ = () => {
     let var$1, var$2, var$3;
     cm_SiteMemberKind_POINT = cm_SiteMemberKind__init_($rt_s(6), 0);
-    cm_SiteMemberKind_LINE_SEGMENT = cm_SiteMemberKind__init_($rt_s(45), 1);
+    cm_SiteMemberKind_LINE_SEGMENT = cm_SiteMemberKind__init_($rt_s(48), 1);
     cm_SiteMemberKind_CIRCLE = cm_SiteMemberKind__init_($rt_s(8), 2);
     cm_SiteMemberKind_ELLIPSE = cm_SiteMemberKind__init_($rt_s(10), 3);
     var$1 = cm_SiteMemberKind__init_($rt_s(9), 4);
@@ -2878,7 +2894,7 @@ cm_MetricMemberCompatibility_pointOnlyMetricMessage = $metricKind => {
     let var$2;
     var$2 = $metricKind.$name0;
     $metricKind = jl_StringBuilder__init_();
-    jl_StringBuilder_append(jl_StringBuilder_append($metricKind, var$2), $rt_s(46));
+    jl_StringBuilder_append(jl_StringBuilder_append($metricKind, var$2), $rt_s(49));
     return jl_StringBuilder_toString($metricKind);
 },
 cm_MetricMemberCompatibility_invalidMetricMessage = ($metricKind, $clusters) => {
@@ -2985,56 +3001,6 @@ c_HandleVisibility_isVisible = ($member, $handleIndex, $memberSelected) => {
         return 1;
     return $handleIndex != c_HandleVisibility_primaryHandleIndex($member) && !$memberSelected ? 0 : 1;
 },
-jl_Math = $rt_classWithoutFields(),
-jl_Math_sin = var$1 => {
-    return Math.sin(var$1);
-},
-jl_Math_cos = var$1 => {
-    return Math.cos(var$1);
-},
-jl_Math_exp = var$1 => {
-    return Math.exp(var$1);
-},
-jl_Math_sqrt = var$1 => {
-    return Math.sqrt(var$1);
-},
-jl_Math_atan2 = (var$1, var$2) => {
-    return Math.atan2(var$1, var$2);
-},
-jl_Math_round = var$1 => {
-    return Long_fromNumber(var$1 + jl_Math_sign(var$1) * 0.5);
-},
-jl_Math_min = ($a, $b) => {
-    if ($a < $b)
-        $b = $a;
-    return $b;
-},
-jl_Math_max = ($a, $b) => {
-    if ($a > $b)
-        $b = $a;
-    return $b;
-},
-jl_Math_minImpl = (var$1, var$2) => {
-    return Math.min(var$1, var$2);
-},
-jl_Math_min0 = (var$1, var$2) => {
-    return jl_Math_minImpl(var$1, var$2);
-},
-jl_Math_maxImpl = (var$1, var$2) => {
-    return Math.max(var$1, var$2);
-},
-jl_Math_max0 = (var$1, var$2) => {
-    return jl_Math_maxImpl(var$1, var$2);
-},
-jl_Math_absImpl = var$1 => {
-    return Math.abs(var$1);
-},
-jl_Math_abs = var$1 => {
-    return jl_Math_absImpl(var$1);
-},
-jl_Math_sign = var$1 => {
-    return Math.sign(var$1);
-},
 otjc_JSBoolean = $rt_classWithoutFields();
 function cg_Vector() {
     let a = this; jl_Object.call(a);
@@ -3046,11 +3012,11 @@ cg_Vector_$callClinit = () => {
     cg_Vector_$callClinit = $rt_eraseClinit(cg_Vector);
     cg_Vector__clinit_();
 },
-cg_Vector_xy = (var$1, $y) => {
+cg_Vector_xy = ($x, $y) => {
     let var$3;
     cg_Vector_$callClinit();
     var$3 = new cg_Vector;
-    var$3.$x0 = var$1;
+    var$3.$x0 = $x;
     var$3.$y0 = $y;
     return var$3;
 },
@@ -3124,12 +3090,69 @@ cm_SiteMemberFactory_createDefault = ($kind, $clusterIndex, $memberIndex, $hint)
     }
     return $kind;
 },
+jl_Math = $rt_classWithoutFields(),
+jl_Math_sin = var$1 => {
+    return Math.sin(var$1);
+},
+jl_Math_cos = var$1 => {
+    return Math.cos(var$1);
+},
+jl_Math_exp = var$1 => {
+    return Math.exp(var$1);
+},
+jl_Math_sqrt = var$1 => {
+    return Math.sqrt(var$1);
+},
+jl_Math_atan2 = (var$1, var$2) => {
+    return Math.atan2(var$1, var$2);
+},
+jl_Math_round = var$1 => {
+    return Long_fromNumber(var$1 + jl_Math_sign(var$1) * 0.5);
+},
+jl_Math_floorMod = ($a, $b) => {
+    let $mod;
+    $mod = $a % $b | 0;
+    if (($a ^ $b) < 0 && $mod)
+        $mod = $mod + $b | 0;
+    return $mod;
+},
+jl_Math_min = ($a, $b) => {
+    if ($a < $b)
+        $b = $a;
+    return $b;
+},
+jl_Math_max = ($a, $b) => {
+    if ($a > $b)
+        $b = $a;
+    return $b;
+},
+jl_Math_minImpl = (var$1, var$2) => {
+    return Math.min(var$1, var$2);
+},
+jl_Math_min0 = (var$1, var$2) => {
+    return jl_Math_minImpl(var$1, var$2);
+},
+jl_Math_maxImpl = (var$1, var$2) => {
+    return Math.max(var$1, var$2);
+},
+jl_Math_max0 = (var$1, var$2) => {
+    return jl_Math_maxImpl(var$1, var$2);
+},
+jl_Math_absImpl = var$1 => {
+    return Math.abs(var$1);
+},
+jl_Math_abs = var$1 => {
+    return jl_Math_absImpl(var$1);
+},
+jl_Math_sign = var$1 => {
+    return Math.sign(var$1);
+},
 cw_SceneJsonJs = $rt_classWithoutFields(),
-cw_SceneJsonJs_parse = $json => {
+cw_SceneJsonJs_parse = var$1 => {
     let $root, $t, var$4, var$5, var$6, var$7, var$8, var$9, var$10, var$11, var$12, var$13, $$je;
     a: {
         try {
-            $root = JSON.parse($rt_ustr($json));
+            $root = JSON.parse($rt_ustr(var$1));
             break a;
         } catch ($$e) {
             $$je = $rt_wrapException($$e);
@@ -3139,23 +3162,23 @@ cw_SceneJsonJs_parse = $json => {
                 throw $$e;
             }
         }
-        $json = new ci_SceneJsonException;
-        jl_Exception__init_1($json, $rt_s(47), $t);
-        $rt_throw($json);
+        var$1 = new ci_SceneJsonException;
+        jl_Exception__init_1(var$1, $rt_s(50), $t);
+        $rt_throw(var$1);
     }
     if ($root === null) {
         $t = new ci_SceneJsonException;
-        jl_Exception__init_($t, $rt_s(48));
+        jl_Exception__init_($t, $rt_s(51));
         $rt_throw($t);
     }
-    $json = new ci_SceneFileFormat$SceneFileV1;
-    $json.$version = cw_SceneJsonJs_str($root, $rt_s(49));
-    $json.$name1 = cw_SceneJsonJs_str($root, $rt_s(50));
-    $json.$metricKind0 = cw_SceneJsonJs_str($root, $rt_s(51));
-    $json.$neighborOrder0 = cw_SceneJsonJs_str($root, $rt_s(52));
-    $json.$siteMemberKind0 = cw_SceneJsonJs_str($root, $rt_s(53));
+    var$1 = new ci_SceneFileFormat$SceneFileV1;
+    var$1.$version = cw_SceneJsonJs_str($root, $rt_s(52));
+    var$1.$name1 = cw_SceneJsonJs_str($root, $rt_s(53));
+    var$1.$metricKind0 = cw_SceneJsonJs_str($root, $rt_s(54));
+    var$1.$neighborOrder0 = cw_SceneJsonJs_str($root, $rt_s(55));
+    var$1.$siteMemberKind0 = cw_SceneJsonJs_str($root, $rt_s(56));
     if (cw_SceneJsonJs_has$js_body$_6($root, "nearestNeighborK") ? 1 : 0) {
-        var$4 = cw_SceneJsonJs_num($root, $rt_s(54)) | 0;
+        var$4 = cw_SceneJsonJs_num($root, $rt_s(57)) | 0;
         jl_Integer_$callClinit();
         if (var$4 >= (-128) && var$4 <= 127) {
             b: {
@@ -3174,43 +3197,43 @@ cw_SceneJsonJs_parse = $json => {
             $t = jl_Integer_integerCache.data[var$4 + 128 | 0];
         } else
             $t = jl_Integer__init_(var$4);
-        $json.$nearestNeighborK0 = $t;
+        var$1.$nearestNeighborK0 = $t;
     }
     var$7 = cw_SceneJsonJs_array$js_body$_8($root, "clusters");
     if (var$7 === null) {
-        $json = new ci_SceneJsonException;
-        jl_Exception__init_($json, $rt_s(55));
-        $rt_throw($json);
+        var$1 = new ci_SceneJsonException;
+        jl_Exception__init_(var$1, $rt_s(58));
+        $rt_throw(var$1);
     }
-    $json.$clusters1 = ju_ArrayList__init_();
+    var$1.$clusters1 = ju_ArrayList__init_();
     var$4 = 0;
     while (var$4 < var$7.length) {
-        $t = $json.$clusters1;
+        $t = var$1.$clusters1;
         $root = otji_JSWrapper_maybeUnwrap(var$7[var$4]);
         if ($root === null) {
-            $json = new ci_SceneJsonException;
-            jl_Exception__init_($json, $rt_s(56));
-            $rt_throw($json);
+            var$1 = new ci_SceneJsonException;
+            jl_Exception__init_(var$1, $rt_s(59));
+            $rt_throw(var$1);
         }
         var$8 = new ci_SceneFileFormat$ClusterJson;
-        var$8.$name = cw_SceneJsonJs_str($root, $rt_s(50));
+        var$8.$name = cw_SceneJsonJs_str($root, $rt_s(53));
         var$9 = cw_SceneJsonJs_obj$js_body$_7($root, "color");
         if (var$9 !== null) {
             var$10 = new ci_SceneFileFormat$ColorJson;
-            var$10.$r0 = cw_SceneJsonJs_num(var$9, $rt_s(57));
-            var$10.$g0 = cw_SceneJsonJs_num(var$9, $rt_s(58));
-            var$10.$b3 = cw_SceneJsonJs_num(var$9, $rt_s(59));
-            var$10.$opacity = cw_SceneJsonJs_num(var$9, $rt_s(60));
+            var$10.$r0 = cw_SceneJsonJs_num(var$9, $rt_s(60));
+            var$10.$g0 = cw_SceneJsonJs_num(var$9, $rt_s(61));
+            var$10.$b3 = cw_SceneJsonJs_num(var$9, $rt_s(62));
+            var$10.$opacity = cw_SceneJsonJs_num(var$9, $rt_s(63));
             var$8.$color0 = var$10;
         }
         var$11 = cw_SceneJsonJs_array$js_body$_8($root, "members");
         if (var$11 === null) {
-            $json = new ci_SceneJsonException;
+            var$1 = new ci_SceneJsonException;
             $t = var$8.$name;
             $root = jl_StringBuilder__init_();
-            jl_StringBuilder_append(jl_StringBuilder_append($root, $rt_s(61)), $t);
-            jl_Exception__init_($json, jl_StringBuilder_toString($root));
-            $rt_throw($json);
+            jl_StringBuilder_append(jl_StringBuilder_append($root, $rt_s(64)), $t);
+            jl_Exception__init_(var$1, jl_StringBuilder_toString($root));
+            $rt_throw(var$1);
         }
         var$10 = ju_ArrayList__init_();
         var$12 = 0;
@@ -3218,22 +3241,22 @@ cw_SceneJsonJs_parse = $json => {
             var$9 = otji_JSWrapper_maybeUnwrap(var$11[var$12]);
             var$13 = new ci_SceneFileFormat$MemberJson;
             if (var$9 !== null) {
-                var$13.$kind = cw_SceneJsonJs_str(var$9, $rt_s(62));
-                var$13.$x1 = cw_SceneJsonJs_optNum(var$9, $rt_s(63));
-                var$13.$y1 = cw_SceneJsonJs_optNum(var$9, $rt_s(64));
-                var$13.$ax = cw_SceneJsonJs_optNum(var$9, $rt_s(65));
-                var$13.$ay = cw_SceneJsonJs_optNum(var$9, $rt_s(66));
-                var$13.$bx = cw_SceneJsonJs_optNum(var$9, $rt_s(67));
-                var$13.$by = cw_SceneJsonJs_optNum(var$9, $rt_s(68));
-                var$13.$cx = cw_SceneJsonJs_optNum(var$9, $rt_s(69));
-                var$13.$cy = cw_SceneJsonJs_optNum(var$9, $rt_s(70));
-                var$13.$radius0 = cw_SceneJsonJs_optNum(var$9, $rt_s(71));
-                var$13.$px0 = cw_SceneJsonJs_optNum(var$9, $rt_s(72));
-                var$13.$py0 = cw_SceneJsonJs_optNum(var$9, $rt_s(73));
-                var$13.$qx0 = cw_SceneJsonJs_optNum(var$9, $rt_s(74));
-                var$13.$qy0 = cw_SceneJsonJs_optNum(var$9, $rt_s(75));
-                var$13.$hx = cw_SceneJsonJs_optNum(var$9, $rt_s(76));
-                var$13.$hy = cw_SceneJsonJs_optNum(var$9, $rt_s(77));
+                var$13.$kind = cw_SceneJsonJs_str(var$9, $rt_s(65));
+                var$13.$x1 = cw_SceneJsonJs_optNum(var$9, $rt_s(66));
+                var$13.$y1 = cw_SceneJsonJs_optNum(var$9, $rt_s(67));
+                var$13.$ax = cw_SceneJsonJs_optNum(var$9, $rt_s(68));
+                var$13.$ay = cw_SceneJsonJs_optNum(var$9, $rt_s(69));
+                var$13.$bx = cw_SceneJsonJs_optNum(var$9, $rt_s(70));
+                var$13.$by = cw_SceneJsonJs_optNum(var$9, $rt_s(71));
+                var$13.$cx = cw_SceneJsonJs_optNum(var$9, $rt_s(72));
+                var$13.$cy = cw_SceneJsonJs_optNum(var$9, $rt_s(73));
+                var$13.$radius0 = cw_SceneJsonJs_optNum(var$9, $rt_s(74));
+                var$13.$px0 = cw_SceneJsonJs_optNum(var$9, $rt_s(75));
+                var$13.$py0 = cw_SceneJsonJs_optNum(var$9, $rt_s(76));
+                var$13.$qx0 = cw_SceneJsonJs_optNum(var$9, $rt_s(77));
+                var$13.$qy0 = cw_SceneJsonJs_optNum(var$9, $rt_s(78));
+                var$13.$hx = cw_SceneJsonJs_optNum(var$9, $rt_s(79));
+                var$13.$hy = cw_SceneJsonJs_optNum(var$9, $rt_s(80));
             }
             ju_ArrayList_add(var$10, var$13);
             var$12 = var$12 + 1 | 0;
@@ -3242,7 +3265,7 @@ cw_SceneJsonJs_parse = $json => {
         ju_ArrayList_add($t, var$8);
         var$4 = var$4 + 1 | 0;
     }
-    return ci_SceneFileFormat_fromDto($json);
+    return ci_SceneFileFormat_fromDto(var$1);
 },
 cw_SceneJsonJs_str = ($obj, $key) => {
     let $v;
@@ -3295,8 +3318,8 @@ cc_ScenePreparation = $rt_classWithoutFields(),
 cc_ScenePreparation_MINIMUM_DISTANCE = null,
 cc_ScenePreparation_MAXIMUM_DISTANCE = null,
 cc_ScenePreparation_SUM_OF_DISTANCES = null,
-cc_ScenePreparation_MEAN_DISTANCE = null,
-cc_ScenePreparation_NEAREST_OWNERSHIP = null,
+cc_ScenePreparation_MEAN_DISTANCE = null;
+let cc_ScenePreparation_NEAREST_OWNERSHIP = null,
 cc_ScenePreparation_FARTHEST_OWNERSHIP = null,
 cc_ScenePreparation_$callClinit = () => {
     cc_ScenePreparation_$callClinit = $rt_eraseClinit(cc_ScenePreparation);
@@ -3835,7 +3858,7 @@ cm_ClusterNaming_$callClinit = () => {
     cm_ClusterNaming__clinit_();
 },
 cm_ClusterNaming__clinit_ = () => {
-    cm_ClusterNaming_NAMES = $rt_wrapArray(jl_String, [$rt_s(78), $rt_s(79), $rt_s(27), $rt_s(80), $rt_s(30), $rt_s(81), $rt_s(82), $rt_s(83), $rt_s(28), $rt_s(84), $rt_s(85), $rt_s(86), $rt_s(87), $rt_s(29)]);
+    cm_ClusterNaming_NAMES = $rt_wrapArray(jl_String, [$rt_s(81), $rt_s(82), $rt_s(30), $rt_s(83), $rt_s(33), $rt_s(84), $rt_s(85), $rt_s(86), $rt_s(31), $rt_s(87), $rt_s(88), $rt_s(89), $rt_s(90), $rt_s(32)]);
     cm_ClusterNaming_HUE_CENTERS = $rt_createDoubleArrayFromData([0.0, 20.0, 35.0, 55.0, 100.0, 130.0, 160.0, 185.0, 210.0, 235.0, 255.0, 275.0, 300.0, 330.0]);
 };
 function cm_CircleMember() {
@@ -3918,21 +3941,21 @@ ci_SceneFileFormat_fromDto = $dto => {
     let $siteMemberKind, $metricKind, $neighborOrder, $loaded, var$6, $snapshot, $invalidMetricMessage, $loadedNearestNeighborK, var$10, var$11, var$12, var$13, $cj, $color, $members, $$je;
     if ($dto === null) {
         $dto = new ci_SceneJsonException;
-        jl_Exception__init_($dto, $rt_s(48));
+        jl_Exception__init_($dto, $rt_s(51));
         $rt_throw($dto);
     }
     $siteMemberKind = $dto.$version;
-    if ($siteMemberKind !== null && jl_String_equals($siteMemberKind, $rt_s(88))) {
+    if ($siteMemberKind !== null && jl_String_equals($siteMemberKind, $rt_s(91))) {
         $siteMemberKind = $dto.$clusters1;
         if ($siteMemberKind !== null && !ju_AbstractCollection_isEmpty($siteMemberKind)) {
             if ($dto.$clusters1.$size0 > 32) {
                 $dto = new ci_SceneJsonException;
-                jl_Exception__init_($dto, $rt_s(89));
+                jl_Exception__init_($dto, $rt_s(92));
                 $rt_throw($dto);
             }
             $siteMemberKind = $dto.$metricKind0;
             if ($siteMemberKind !== null && !jl_String_isEmpty($siteMemberKind)) {
-                if (jl_String_equals($rt_s(90), $siteMemberKind)) {
+                if (jl_String_equals($rt_s(93), $siteMemberKind)) {
                     cm_MetricKind_$callClinit();
                     $metricKind = cm_MetricKind_MEAN_DISTANCE;
                 } else
@@ -3949,7 +3972,7 @@ ci_SceneFileFormat_fromDto = $dto => {
                         }
                         $dto = new ci_SceneJsonException;
                         $metricKind = jl_StringBuilder__init_();
-                        jl_StringBuilder_append(jl_StringBuilder_append($metricKind, $rt_s(91)), $siteMemberKind);
+                        jl_StringBuilder_append(jl_StringBuilder_append($metricKind, $rt_s(94)), $siteMemberKind);
                         jl_Exception__init_($dto, jl_StringBuilder_toString($metricKind));
                         $rt_throw($dto);
                     }
@@ -3968,7 +3991,7 @@ ci_SceneFileFormat_fromDto = $dto => {
                         }
                         $dto = new ci_SceneJsonException;
                         $metricKind = jl_StringBuilder__init_();
-                        jl_StringBuilder_append(jl_StringBuilder_append($metricKind, $rt_s(92)), $siteMemberKind);
+                        jl_StringBuilder_append(jl_StringBuilder_append($metricKind, $rt_s(95)), $siteMemberKind);
                         jl_Exception__init_($dto, jl_StringBuilder_toString($metricKind));
                         $rt_throw($dto);
                     }
@@ -3990,7 +4013,7 @@ ci_SceneFileFormat_fromDto = $dto => {
                     $siteMemberKind = new ci_SceneJsonException;
                     $dto = $dto.$siteMemberKind0;
                     $metricKind = jl_StringBuilder__init_();
-                    jl_StringBuilder_append(jl_StringBuilder_append($metricKind, $rt_s(93)), $dto);
+                    jl_StringBuilder_append(jl_StringBuilder_append($metricKind, $rt_s(96)), $dto);
                     jl_Exception__init_($siteMemberKind, jl_StringBuilder_toString($metricKind));
                     $rt_throw($siteMemberKind);
                 }
@@ -4016,7 +4039,7 @@ ci_SceneFileFormat_fromDto = $dto => {
                                 $loadedNearestNeighborK = $invalidMetricMessage.$value3;
                                 if (!($loadedNearestNeighborK >= 1 && $loadedNearestNeighborK <= 32)) {
                                     $dto = new ci_SceneJsonException;
-                                    jl_Exception__init_($dto, $rt_s(94));
+                                    jl_Exception__init_($dto, $rt_s(97));
                                     $rt_throw($dto);
                                 }
                             }
@@ -4067,7 +4090,7 @@ ci_SceneFileFormat_fromDto = $dto => {
                         if ($snapshot === null) {
                             $dto = new ci_SceneJsonException;
                             $siteMemberKind = jl_StringBuilder__init_();
-                            jl_StringBuilder_append(jl_StringBuilder_append($siteMemberKind, $rt_s(95)), $invalidMetricMessage);
+                            jl_StringBuilder_append(jl_StringBuilder_append($siteMemberKind, $rt_s(98)), $invalidMetricMessage);
                             jl_Exception__init_($dto, jl_StringBuilder_toString($siteMemberKind));
                             $rt_throw($dto);
                         }
@@ -4082,26 +4105,26 @@ ci_SceneFileFormat_fromDto = $dto => {
                         ju_ArrayList_add($loaded, $invalidMetricMessage);
                     }
                     $dto = new ci_SceneJsonException;
-                    jl_Exception__init_($dto, $rt_s(96));
+                    jl_Exception__init_($dto, $rt_s(99));
                     $rt_throw($dto);
                 }
                 $dto = new ci_SceneJsonException;
                 $siteMemberKind = $cj.$name;
                 $metricKind = jl_StringBuilder__init_();
-                jl_StringBuilder_append(jl_StringBuilder_append($metricKind, $rt_s(61)), $siteMemberKind);
+                jl_StringBuilder_append(jl_StringBuilder_append($metricKind, $rt_s(64)), $siteMemberKind);
                 jl_Exception__init_($dto, jl_StringBuilder_toString($metricKind));
                 $rt_throw($dto);
             }
             $siteMemberKind = new ci_SceneJsonException;
-            jl_Exception__init_($siteMemberKind, $rt_s(97));
+            jl_Exception__init_($siteMemberKind, $rt_s(100));
             $rt_throw($siteMemberKind);
         }
         $dto = new ci_SceneJsonException;
-        jl_Exception__init_($dto, $rt_s(55));
+        jl_Exception__init_($dto, $rt_s(58));
         $rt_throw($dto);
     }
     $siteMemberKind = new ci_SceneJsonException;
-    jl_Exception__init_($siteMemberKind, $rt_s(98));
+    jl_Exception__init_($siteMemberKind, $rt_s(101));
     $rt_throw($siteMemberKind);
 },
 ci_SceneFileFormat_parseMembers = ($members, $clusterName) => {
@@ -4118,7 +4141,7 @@ ci_SceneFileFormat_parseMembers = ($members, $clusterName) => {
                                 return $out;
                             $members = new ci_SceneJsonException;
                             $out = jl_StringBuilder__init_();
-                            jl_StringBuilder_append(jl_StringBuilder_append($out, $rt_s(99)), $clusterName);
+                            jl_StringBuilder_append(jl_StringBuilder_append($out, $rt_s(102)), $clusterName);
                             ci_SceneJsonException__init_($members, jl_StringBuilder_toString($out));
                             $rt_throw($members);
                         }
@@ -4127,7 +4150,7 @@ ci_SceneFileFormat_parseMembers = ($members, $clusterName) => {
                         if ($members === null) {
                             $members = new ci_SceneJsonException;
                             $out = jl_StringBuilder__init_();
-                            jl_StringBuilder_append(jl_StringBuilder_append($out, $rt_s(100)), $clusterName);
+                            jl_StringBuilder_append(jl_StringBuilder_append($out, $rt_s(103)), $clusterName);
                             jl_Exception__init_($members, jl_StringBuilder_toString($out));
                             $rt_throw($members);
                         }
@@ -4161,7 +4184,7 @@ ci_SceneFileFormat_parseMembers = ($members, $clusterName) => {
                                     var$6 = 0;
                                     break g;
                                 case 1338394056:
-                                    if (!jl_String_equals($members, $rt_s(45)))
+                                    if (!jl_String_equals($members, $rt_s(48)))
                                         break g;
                                     var$6 = 1;
                                     break g;
@@ -4193,7 +4216,7 @@ ci_SceneFileFormat_parseMembers = ($members, $clusterName) => {
                                                     $members = new ci_SceneJsonException;
                                                     $out = $mj.$kind;
                                                     $mj = jl_StringBuilder__init_();
-                                                    jl_StringBuilder_append(jl_StringBuilder_append(jl_StringBuilder_append(jl_StringBuilder_append($mj, $rt_s(101)), $out), $rt_s(102)), $clusterName);
+                                                    jl_StringBuilder_append(jl_StringBuilder_append(jl_StringBuilder_append(jl_StringBuilder_append($mj, $rt_s(104)), $out), $rt_s(105)), $clusterName);
                                                     jl_Exception__init_($members, jl_StringBuilder_toString($mj));
                                                     $rt_throw($members);
                                             }
@@ -4245,7 +4268,7 @@ ci_SceneFileFormat_parseMembers = ($members, $clusterName) => {
                                 if (var$9.$value < 0.0) {
                                     $members = new ci_SceneJsonException;
                                     $out = jl_StringBuilder__init_();
-                                    jl_StringBuilder_append(jl_StringBuilder_append($out, $rt_s(103)), $clusterName);
+                                    jl_StringBuilder_append(jl_StringBuilder_append($out, $rt_s(106)), $clusterName);
                                     ci_SceneJsonException__init_($members, jl_StringBuilder_toString($out));
                                     $rt_throw($members);
                                 }
@@ -4274,31 +4297,31 @@ ci_SceneFileFormat_parseMembers = ($members, $clusterName) => {
                     }
                     $members = new ci_SceneJsonException;
                     $out = jl_StringBuilder__init_();
-                    jl_StringBuilder_append(jl_StringBuilder_append($out, $rt_s(104)), $clusterName);
+                    jl_StringBuilder_append(jl_StringBuilder_append($out, $rt_s(107)), $clusterName);
                     ci_SceneJsonException__init_($members, jl_StringBuilder_toString($out));
                     $rt_throw($members);
                 }
                 $members = new ci_SceneJsonException;
                 $out = jl_StringBuilder__init_();
-                jl_StringBuilder_append(jl_StringBuilder_append($out, $rt_s(105)), $clusterName);
+                jl_StringBuilder_append(jl_StringBuilder_append($out, $rt_s(108)), $clusterName);
                 ci_SceneJsonException__init_($members, jl_StringBuilder_toString($out));
                 $rt_throw($members);
             }
             $members = new ci_SceneJsonException;
             $out = jl_StringBuilder__init_();
-            jl_StringBuilder_append(jl_StringBuilder_append($out, $rt_s(106)), $clusterName);
+            jl_StringBuilder_append(jl_StringBuilder_append($out, $rt_s(109)), $clusterName);
             jl_Exception__init_($members, jl_StringBuilder_toString($out));
             $rt_throw($members);
         }
         $members = new ci_SceneJsonException;
         $out = jl_StringBuilder__init_();
-        jl_StringBuilder_append(jl_StringBuilder_append($out, $rt_s(107)), $clusterName);
+        jl_StringBuilder_append(jl_StringBuilder_append($out, $rt_s(110)), $clusterName);
         jl_Exception__init_($members, jl_StringBuilder_toString($out));
         $rt_throw($members);
     }
     $members = new ci_SceneJsonException;
     $out = jl_StringBuilder__init_();
-    jl_StringBuilder_append(jl_StringBuilder_append($out, $rt_s(108)), $clusterName);
+    jl_StringBuilder_append(jl_StringBuilder_append($out, $rt_s(111)), $clusterName);
     jl_Exception__init_($members, jl_StringBuilder_toString($out));
     $rt_throw($members);
 };
@@ -5011,10 +5034,10 @@ ju_Optional, 0, jl_Object, [], 17, 0, 0, 0,
 cm_ClusterSite, 0, jl_Object, [], 17, 0, 0, 0,
 cm_ClusterMember, 0, jl_Object, [], 1537, 0, 0, 0,
 c_HandleVisibility, 0, jl_Object, [], 17, 0, 0, 0,
-jl_Math, 0, jl_Object, [], 17, 0, 0, 0,
 otjc_JSBoolean, 0, jl_Object, [otj_JSObject], 1025, 0, 0, 0,
 cg_Vector, 0, jl_Object, [], 17, 0, () => cg_Vector_$callClinit(), 0,
 cm_SiteMemberFactory, 0, jl_Object, [], 17, 0, 0, 0,
+jl_Math, 0, jl_Object, [], 17, 0, 0, 0,
 cw_SceneJsonJs, 0, jl_Object, [], 16, 0, 0, 0,
 ci_SceneJsonException, 0, jl_Exception, [], 17, 0, 0, 0,
 cc_ScenePreparation, 0, jl_Object, [], 17, 0, () => cc_ScenePreparation_$callClinit(), 0,
@@ -5115,11 +5138,11 @@ let $rt_booleanArrayCls = $rt_arraycls($rt_booleancls),
 $rt_charArrayCls = $rt_arraycls($rt_charcls),
 $rt_intArrayCls = $rt_arraycls($rt_intcls),
 $rt_doubleArrayCls = $rt_arraycls($rt_doublecls);
-$rt_stringPool(["0", "null", "interface ", "class ", "", "[L", "POINT", "SEGMENT", "CIRCLE", "LINE", "ELLIPSE", "Already at the maximum number of clusters", "Cannot remove the last cluster", "No clusters", "Cannot remove the last member of a cluster", "Metric parameter k must be between 1 and 32", "No clusters to add a member to", "Active cluster already has the maximum number of members", "Unknown neighbor order: ", "World view requires max > min on both axes", "Invalid scene JSON", "Scene JSON is empty", "Active cluster index out of range",
-"Unknown metric: ", "rasterizer returned null", "width and height must be positive", "Unknown site member kind: ", "Amber", "Azure", "Rose", "Lime", "Index out of range: ", "Class does not represent enum", "Enum ", " does not have the ", " constant", "Can\'t compare ", " to ", "MINIMUM_DISTANCE", "MAXIMUM_DISTANCE", "SUM_OF_DISTANCES", "MEAN_DISTANCE", "KTH_NEAREST_DISTANCE", "NEAREST", "FARTHEST", "LINE_SEGMENT", " is only supported for clusters made entirely of points.", "Invalid JSON", "Empty scene file",
-"version", "name", "metricKind", "neighborOrder", "siteMemberKind", "nearestNeighborK", "Scene must contain at least one cluster", "Cluster entry is null", "r", "g", "b", "opacity", "Cluster must have at least one member: ", "kind", "x", "y", "ax", "ay", "bx", "by", "cx", "cy", "radius", "px", "py", "qx", "qy", "hx", "hy", "Red", "Orange", "Yellow", "Green", "Teal", "Cyan", "Blue", "Indigo", "Violet", "Magenta", "1", "Too many clusters (max 32)", "AVERAGE_DISTANCE", "Unknown metricKind: ", "Unknown neighborOrder: ",
-"Unknown siteMemberKind: ", "nearestNeighborK must be between 1 and 32", "Cluster color is required for ", "Cluster name is required", "metricKind is required", "Unsupported or missing version (expected 1)", "Too many members in cluster ", "Member kind is required in cluster ", "Unknown member kind: ", " in cluster ", "CIRCLE member radius must be non-negative in cluster ", "POINT member requires x and y in cluster ", "LINE_SEGMENT member requires ax, ay, bx, by in cluster ", "ELLIPSE member requires ax, ay, bx, by, hx, hy in cluster ",
-"CIRCLE member requires cx, cy, radius in cluster ", "LINE member requires px, py, qx, qy in cluster "]);
+$rt_stringPool(["0", "null", "interface ", "class ", "", "[L", "POINT", "SEGMENT", "CIRCLE", "LINE", "ELLIPSE", "Metric parameter k must be between 1 and 32", "Already at the maximum number of clusters", "Cannot remove the last cluster", "Select a member first to delete its cluster.", "Unknown neighbor order: ", "Select a member first to add to its cluster.", "Selected cluster already has the maximum number of members", "World view requires max > min on both axes", "Cannot remove the last member of a cluster",
+"Select a member first to delete it.", "Selected cluster has no members", "Select a member first to cycle within its cluster.", "Invalid scene JSON", "Scene JSON is empty", "No clusters", "Unknown metric: ", "rasterizer returned null", "width and height must be positive", "Unknown site member kind: ", "Amber", "Azure", "Rose", "Lime", "Index out of range: ", "Class does not represent enum", "Enum ", " does not have the ", " constant", "Can\'t compare ", " to ", "MINIMUM_DISTANCE", "MAXIMUM_DISTANCE", "SUM_OF_DISTANCES",
+"MEAN_DISTANCE", "KTH_NEAREST_DISTANCE", "NEAREST", "FARTHEST", "LINE_SEGMENT", " is only supported for clusters made entirely of points.", "Invalid JSON", "Empty scene file", "version", "name", "metricKind", "neighborOrder", "siteMemberKind", "nearestNeighborK", "Scene must contain at least one cluster", "Cluster entry is null", "r", "g", "b", "opacity", "Cluster must have at least one member: ", "kind", "x", "y", "ax", "ay", "bx", "by", "cx", "cy", "radius", "px", "py", "qx", "qy", "hx", "hy", "Red", "Orange",
+"Yellow", "Green", "Teal", "Cyan", "Blue", "Indigo", "Violet", "Magenta", "1", "Too many clusters (max 32)", "AVERAGE_DISTANCE", "Unknown metricKind: ", "Unknown neighborOrder: ", "Unknown siteMemberKind: ", "nearestNeighborK must be between 1 and 32", "Cluster color is required for ", "Cluster name is required", "metricKind is required", "Unsupported or missing version (expected 1)", "Too many members in cluster ", "Member kind is required in cluster ", "Unknown member kind: ", " in cluster ", "CIRCLE member radius must be non-negative in cluster ",
+"POINT member requires x and y in cluster ", "LINE_SEGMENT member requires ax, ay, bx, by in cluster ", "ELLIPSE member requires ax, ay, bx, by, hx, hy in cluster ", "CIRCLE member requires cx, cy, radius in cluster ", "LINE member requires px, py, qx, qy in cluster "]);
 jl_String.prototype.toString = function() {
     return $rt_ustr(this);
 };

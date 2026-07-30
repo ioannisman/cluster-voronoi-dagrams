@@ -28,7 +28,6 @@ const selectMetric = document.querySelector<HTMLSelectElement>('#select-metric')
 const selectNeighbor = document.querySelector<HTMLSelectElement>('#select-neighbor');
 const inputK = document.querySelector<HTMLInputElement>('#input-k');
 const selectExample = document.querySelector<HTMLSelectElement>('#select-example');
-const selectCluster = document.querySelector<HTMLSelectElement>('#select-cluster');
 const selectSiteKind = document.querySelector<HTMLSelectElement>('#select-site-kind');
 const btnAddMember = document.querySelector<HTMLButtonElement>('#btn-add-member');
 const btnRemoveMember = document.querySelector<HTMLButtonElement>('#btn-remove-member');
@@ -53,7 +52,6 @@ if (
   !selectNeighbor ||
   !inputK ||
   !selectExample ||
-  !selectCluster ||
   !selectSiteKind ||
   !btnAddMember ||
   !btnRemoveMember ||
@@ -296,7 +294,8 @@ function drawHandles(frame: CvdFrame, displayWidth: number, displayHeight: numbe
     const cluster = handles.cluster[i];
     const member = handles.member[i];
     const within = handles.within?.[i] ?? 0;
-    const isActiveCluster = cluster === scene.activeClusterIndex;
+    const isActiveCluster =
+      scene.selectedClusterIndex >= 0 && cluster === scene.selectedClusterIndex;
     const isSelectedMember =
       scene.selectedClusterIndex === cluster && scene.selectedMemberIndex === member;
     const isSelectedHandle = isSelectedMember && scene.selectedHandleIndex === within;
@@ -328,26 +327,6 @@ function drawSnapIndicator(): void {
   ctx!.stroke();
 }
 
-function rebuildClusterSelect(frame: CvdFrame): void {
-  const names = frame.scene.clusterNames ?? [];
-  const desired = String(frame.scene.activeClusterIndex);
-  if (
-    selectCluster!.options.length === names.length &&
-    Array.from(selectCluster!.options).every((opt, i) => opt.value === String(i) && opt.text === `${i + 1}: ${names[i]}`)
-  ) {
-    selectCluster!.value = desired;
-    return;
-  }
-  selectCluster!.innerHTML = '';
-  for (let i = 0; i < names.length; i++) {
-    const opt = document.createElement('option');
-    opt.value = String(i);
-    opt.textContent = `${i + 1}: ${names[i]}`;
-    selectCluster!.appendChild(opt);
-  }
-  selectCluster!.value = desired;
-}
-
 function syncControlsFromScene(frame: CvdFrame): void {
   syncingControls = true;
   selectMetric!.value = frame.scene.metricKind;
@@ -361,7 +340,6 @@ function syncControlsFromScene(frame: CvdFrame): void {
   ) {
     selectSiteKind!.value = frame.scene.siteMemberKind;
   }
-  rebuildClusterSelect(frame);
   syncingControls = false;
 }
 
@@ -452,14 +430,12 @@ function paint(frame: CvdFrame, ms: number): void {
 
 function currentSettings(): CvdSceneSettings {
   const k = Number.parseInt(inputK!.value, 10);
-  const active = Number.parseInt(selectCluster!.value, 10);
   return {
     metricKind: selectMetric!.value,
     neighborOrder: selectNeighbor!.value,
     nearestNeighborK: Number.isFinite(k) ? k : 1,
     shading: false,
     siteMemberKind: selectSiteKind!.value,
-    activeClusterIndex: Number.isFinite(active) ? active : 0,
     worldView: boundsOf(worldView),
   };
 }
@@ -577,12 +553,6 @@ function onPointerDown(event: PointerEvent): void {
   }
 
   if (nearest !== null && toggleMembers!.checked && event.button === 0) {
-    // Keep the cluster control aligned with the handle's cluster before settings sync,
-    // so a stale activeClusterIndex does not clear the new selection in the worker.
-    const handleCluster = latestFrame?.handles.cluster[nearest];
-    if (handleCluster != null && Number.isFinite(handleCluster)) {
-      selectCluster!.value = String(handleCluster);
-    }
     draggingHandle = nearest;
     canvas!.setPointerCapture(event.pointerId);
     updateCursor();
@@ -698,15 +668,10 @@ function removeActiveMember(): void {
 }
 
 function cycleActiveCluster(delta: number): void {
-  const count = selectCluster!.options.length;
-  if (count <= 0) {
-    return;
-  }
-  const current = Number.parseInt(selectCluster!.value, 10);
-  const base = Number.isFinite(current) ? current : 0;
-  const next = ((base + delta) % count + count) % count;
-  selectCluster!.value = String(next);
-  onSceneControlChange();
+  requestClassify({
+    settings: currentSettings(),
+    actions: [{ type: 'cycleSelectedCluster', delta }],
+  });
 }
 
 function cycleSelectedMember(delta: number): void {
@@ -911,7 +876,6 @@ function wireControls(): void {
   selectExample!.addEventListener('change', () => {
     void onExampleChange();
   });
-  selectCluster!.addEventListener('change', onSceneControlChange);
   selectSiteKind!.addEventListener('change', onSceneControlChange);
 
   btnAddMember!.addEventListener('click', () => addMemberAtPointerOrCenter());

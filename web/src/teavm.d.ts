@@ -71,7 +71,6 @@ export type CvdSceneSettings = {
   nearestNeighborK?: number;
   shading?: boolean;
   siteMemberKind?: string;
-  activeClusterIndex?: number;
   worldView?: CvdWorldView;
 };
 
@@ -81,6 +80,7 @@ export type CvdAuthoringAction =
   | { type: 'beginHandleDrag'; index: number }
   | { type: 'endHandleDrag' }
   | { type: 'cycleSelectedMember'; delta: number }
+  | { type: 'cycleSelectedCluster'; delta: number }
   | { type: 'addMemberAt'; worldX: number; worldY: number }
   | { type: 'removeMember' }
   | { type: 'addCluster' }
@@ -100,7 +100,8 @@ export type CvdCore = {
   setActiveClusterIndex: (index: number) => string;
   setSiteMemberKind: (name: string) => string;
   selectHandle: (index: number) => void;
-  cycleSelectedMember: (delta: number) => void;
+  cycleSelectedMember: (delta: number) => string;
+  cycleSelectedCluster: (delta: number) => string;
   clearSelection: () => void;
   addMemberAt: (worldX: number, worldY: number) => string;
   removeMember: () => string;

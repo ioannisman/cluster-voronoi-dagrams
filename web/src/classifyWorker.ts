@@ -48,9 +48,6 @@ function applySettings(core: CvdCore, settings: CvdSceneSettings): void {
   if (settings.siteMemberKind != null) {
     core.setSiteMemberKind(settings.siteMemberKind);
   }
-  if (settings.activeClusterIndex != null) {
-    core.setActiveClusterIndex(settings.activeClusterIndex);
-  }
 }
 
 function applyActions(core: CvdCore, actions: CvdAuthoringAction[]): void {
@@ -70,6 +67,9 @@ function applyActions(core: CvdCore, actions: CvdAuthoringAction[]): void {
         break;
       case 'cycleSelectedMember':
         core.cycleSelectedMember(action.delta);
+        break;
+      case 'cycleSelectedCluster':
+        core.cycleSelectedCluster(action.delta);
         break;
       case 'addMemberAt':
         core.addMemberAt(action.worldX, action.worldY);

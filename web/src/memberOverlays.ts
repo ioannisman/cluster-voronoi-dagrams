@@ -140,7 +140,8 @@ export function drawMemberOverlays(
     const member = overlays.member[i];
     const selected =
       scene.selectedClusterIndex === cluster && scene.selectedMemberIndex === member;
-    const activeCluster = cluster === scene.activeClusterIndex;
+    const activeCluster =
+      scene.selectedClusterIndex >= 0 && cluster === scene.selectedClusterIndex;
     const style = strokeStyle(selected, activeCluster);
     ctx.strokeStyle = style.stroke;
     ctx.lineWidth = style.lineWidth;

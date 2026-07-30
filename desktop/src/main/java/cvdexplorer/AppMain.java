@@ -70,12 +70,10 @@ public class AppMain implements Drawing {
     private double pixelWidth = 1.0;
     private boolean dragging = false;
     private Vector draggingStartPoint;
-    private int activeClusterIndex = 0;
     private int selectedClusterIndex = -1;
     private int selectedMemberIndex = -1;
     private int selectedHandleIndex = -1;
 
-    private int prevGadgetActiveClusterOneBased = 0;
     private GalleryExample prevGalleryExample = state.galleryExample;
     private MetricKind lastValidMetricKind = state.metricKind;
     private SiteMemberKind lastValidSiteMemberKind = state.siteMemberKind;
@@ -83,7 +81,11 @@ public class AppMain implements Drawing {
     private SiteMemberKind lastRejectedSiteMemberKind = null;
     private Integer lastRejectedClusterCount = null;
     private Integer lastRejectedMemberCount = null;
-    private int lastRejectedMemberCountClusterOneBased = -1;
+    private int lastRejectedMemberCountClusterIndex = -1;
+    private Integer lastRejectedMemberCountWithoutSelection = null;
+    private Integer lastRejectedClusterShrinkWithoutSelection = null;
+    /** Member-count gadget value frozen while nothing is selected. */
+    private int memberCountWhileNoSelection = state.targetPointCountForActiveCluster;
     private Alert activeErrorAlert = null;
     private String activeErrorDialogKey = null;
 
@@ -98,17 +100,9 @@ public class AppMain implements Drawing {
         normalizeMetricSelection();
         normalizeSiteMemberKindSelection();
         normalizeClusterCountGadget();
-        normalizeActiveClusterMemberCountGadget();
+        normalizeSelectedClusterMemberCountGadget();
         state.clampNearestNeighborK();
         applyGalleryExampleSelection();
-
-        int g = state.activeClusterOneBased;
-        if (g != prevGadgetActiveClusterOneBased) {
-            activeClusterIndex = g - 1;
-            prevGadgetActiveClusterOneBased = g;
-            // Selection must belong to the active cluster; drop it when active changes.
-            clearSelection();
-        }
 
         normalizeSelection();
 
@@ -200,7 +194,7 @@ public class AppMain implements Drawing {
         double handleR = pointRadius * pixelWidth;
         for (int clusterIndex = 0; clusterIndex < preparedScene.clusters().size(); clusterIndex++) {
             ClusterSite cluster = preparedScene.clusters().get(clusterIndex);
-            boolean activeCluster = activeClusterIndex >= 0 && clusterIndex == activeClusterIndex;
+            boolean activeCluster = hasSelection() && clusterIndex == selectedClusterIndex;
             for (int memberIndex = 0; memberIndex < cluster.size(); memberIndex++) {
                 ClusterMember member = cluster.members().get(memberIndex);
                 boolean memberSelected = clusterIndex == selectedClusterIndex && memberIndex == selectedMemberIndex;
@@ -226,15 +220,14 @@ public class AppMain implements Drawing {
         if (!dragging && event.isMouseButtonPress(1)) {
             Selection selection = nearestHandle(pointerWorld, mouseReach * pixelWidth);
             if (selection == null) {
-                clearSelectionAndActiveCluster();
+                clearSelection();
                 coMovingHandles = List.of();
             } else {
                 selectedClusterIndex = selection.clusterIndex();
                 selectedMemberIndex = selection.memberIndex();
                 selectedHandleIndex = selection.handleIndex();
-                activeClusterIndex = selection.clusterIndex();
-                state.activeClusterOneBased = selection.clusterIndex() + 1;
-                prevGadgetActiveClusterOneBased = state.activeClusterOneBased;
+                state.targetPointCountForActiveCluster =
+                        state.clusters().get(selectedClusterIndex).size();
                 draggingStartPoint = pointerWorld;
                 coMovingHandles = findColocatedHandles(
                         selectedClusterIndex, selectedMemberIndex, selectedHandleIndex);
@@ -296,9 +289,9 @@ public class AppMain implements Drawing {
         if (event.isKeyPress(KeyCode.N) || event.isKeyPress(KeyCode.P)) {
             int delta = event.isKeyPress(KeyCode.N) ? 1 : -1;
             if (inputState.keyPressed(KeyCode.SHIFT)) {
-                cycleActiveCluster(delta);
+                selectFirstMemberInAdjacentCluster(delta);
             } else {
-                cycleSelectedMemberInActiveCluster(delta);
+                cycleSelectedMember(delta);
             }
         }
 
@@ -310,17 +303,14 @@ public class AppMain implements Drawing {
                     if (compatibilityError != null) {
                         showCompatibilityError(compatibilityError);
                     } else {
-                        activeClusterIndex = state.clusterCount() - 1;
-                        state.activeClusterOneBased = activeClusterIndex + 1;
-                        prevGadgetActiveClusterOneBased = state.activeClusterOneBased;
-                        state.targetPointCountForActiveCluster = state.clusters().get(activeClusterIndex).size();
-                        clearSelection();
-                        selectedClusterIndex = activeClusterIndex;
-                        selectedMemberIndex = 0;
-                        selectedHandleIndex = HandleVisibility.primaryHandleIndex(
-                                state.clusters().get(activeClusterIndex).members().get(0));
+                        int newIdx = state.clusterCount() - 1;
+                        selectMember(newIdx, 0);
                     }
                 }
+                return;
+            }
+            if (!hasSelection()) {
+                showSelectionRequired("Select a member first to add to its cluster.");
                 return;
             }
             String invalidAddMessage = MetricMemberCompatibility.invalidNewMemberMessage(state.metricKind, state.siteMemberKind)
@@ -330,40 +320,36 @@ public class AppMain implements Drawing {
                 showCompatibilityError(invalidAddMessage);
                 return;
             }
-            int clusterIdx = state.activeClusterOneBased - 1;
+            int clusterIdx = selectedClusterIndex;
             ClusterSite cluster = state.clusters().get(clusterIdx);
             cluster.addMember(SiteMemberFactory.createDefault(state.siteMemberKind, clusterIdx, cluster.size(), pointerWorld));
-            activeClusterIndex = clusterIdx;
-            prevGadgetActiveClusterOneBased = state.activeClusterOneBased;
             state.targetPointCountForActiveCluster = cluster.size();
-            selectedClusterIndex = clusterIdx;
-            selectedMemberIndex = cluster.size() - 1;
-            selectedHandleIndex = HandleVisibility.primaryHandleIndex(cluster.members().get(selectedMemberIndex));
+            selectMember(clusterIdx, cluster.size() - 1);
         }
 
         if (event.isKeyPress(KeyCode.D)) {
             if (inputState.keyPressed(KeyCode.SHIFT)) {
-                int removeIdx = activeClusterIndex >= 0
-                        ? activeClusterIndex
-                        : state.activeClusterOneBased - 1;
+                if (!hasSelection()) {
+                    showSelectionRequired("Select a member first to delete its cluster.");
+                    return;
+                }
+                int removeIdx = selectedClusterIndex;
                 if (state.removeClusterAt(removeIdx)) {
-                    activeClusterIndex = state.activeClusterOneBased - 1;
-                    prevGadgetActiveClusterOneBased = state.activeClusterOneBased;
-                    state.targetPointCountForActiveCluster = state.clusters().get(activeClusterIndex).size();
                     clearSelection();
+                    state.resetMemberCountGadgetSync();
                 }
                 return;
             }
-            if (hasSelection()) {
-                ClusterSite cluster = state.clusters().get(selectedClusterIndex);
-                if (cluster.size() > 1) {
-                    cluster.removeMember(selectedMemberIndex);
-                    selectedMemberIndex = Math.min(selectedMemberIndex, cluster.size() - 1);
-                    selectedHandleIndex = Math.min(selectedHandleIndex, cluster.members().get(selectedMemberIndex).handleCount() - 1);
-                    if (selectedClusterIndex == state.activeClusterOneBased - 1) {
-                        state.targetPointCountForActiveCluster = cluster.size();
-                    }
-                }
+            if (!hasSelection()) {
+                showSelectionRequired("Select a member first to delete it.");
+                return;
+            }
+            ClusterSite cluster = state.clusters().get(selectedClusterIndex);
+            if (cluster.size() > 1) {
+                cluster.removeMember(selectedMemberIndex);
+                int nextMember = Math.min(selectedMemberIndex, cluster.size() - 1);
+                state.targetPointCountForActiveCluster = cluster.size();
+                selectMember(selectedClusterIndex, nextMember);
             }
         }
 
@@ -373,10 +359,9 @@ public class AppMain implements Drawing {
             lastValidMetricKind = state.metricKind;
             lastValidSiteMemberKind = state.siteMemberKind;
             clearRejectedGadgetAttempts();
-            activeClusterIndex = state.activeClusterOneBased - 1;
-            prevGadgetActiveClusterOneBased = state.activeClusterOneBased;
             prevGalleryExample = state.galleryExample;
             clearSelection();
+            state.resetMemberCountGadgetSync();
         }
     }
 
@@ -497,39 +482,37 @@ public class AppMain implements Drawing {
         return result;
     }
 
-    private void cycleActiveCluster(int delta) {
+    private void selectMember(int clusterIndex, int memberIndex) {
+        ClusterSite cluster = state.clusters().get(clusterIndex);
+        selectedClusterIndex = clusterIndex;
+        selectedMemberIndex = memberIndex;
+        selectedHandleIndex = HandleVisibility.primaryHandleIndex(cluster.members().get(memberIndex));
+        state.targetPointCountForActiveCluster = cluster.size();
+    }
+
+    /** Shift+n/p: select the first member of the next/previous cluster. */
+    private void selectFirstMemberInAdjacentCluster(int delta) {
         int clusterCount = state.clusterCount();
         if (clusterCount <= 0) {
             return;
         }
-        int current = state.activeClusterOneBased - 1;
+        int current = hasSelection() ? selectedClusterIndex : 0;
         int next = Math.floorMod(current + delta, clusterCount);
-        state.activeClusterOneBased = next + 1;
-        activeClusterIndex = next;
-        prevGadgetActiveClusterOneBased = state.activeClusterOneBased;
-        if (next != current) {
-            clearSelection();
-        }
+        selectMember(next, 0);
     }
 
-    private void cycleSelectedMemberInActiveCluster(int delta) {
-        if (state.clusterCount() <= 0) {
+    private void cycleSelectedMember(int delta) {
+        if (!hasSelection()) {
+            showSelectionRequired("Select a member first to cycle within its cluster.");
             return;
         }
-        int clusterIdx = state.activeClusterOneBased - 1;
-        ClusterSite cluster = state.clusters().get(clusterIdx);
+        ClusterSite cluster = state.clusters().get(selectedClusterIndex);
         int memberCount = cluster.size();
         if (memberCount <= 0) {
             return;
         }
-        int current = (selectedClusterIndex == clusterIdx && selectedMemberIndex >= 0)
-                ? selectedMemberIndex
-                : (delta > 0 ? -1 : 0);
-        int next = Math.floorMod(current + delta, memberCount);
-        activeClusterIndex = clusterIdx;
-        selectedClusterIndex = clusterIdx;
-        selectedMemberIndex = next;
-        selectedHandleIndex = HandleVisibility.primaryHandleIndex(cluster.members().get(next));
+        int next = Math.floorMod(selectedMemberIndex + delta, memberCount);
+        selectMember(selectedClusterIndex, next);
     }
 
     private boolean hasSelection() {
@@ -544,22 +527,13 @@ public class AppMain implements Drawing {
         draggingStartPoint = null;
         coMovingHandles = List.of();
         snapTargetPosition = null;
-    }
-
-    private void clearSelectionAndActiveCluster() {
-        clearSelection();
-        activeClusterIndex = -1;
+        memberCountWhileNoSelection = state.targetPointCountForActiveCluster;
     }
 
     private void normalizeSelection() {
         if (state.clusterCount() == 0) {
-            activeClusterIndex = -1;
             clearSelection();
             return;
-        }
-
-        if (activeClusterIndex >= state.clusterCount()) {
-            activeClusterIndex = state.clusterCount() - 1;
         }
 
         if (!hasSelection()) {
@@ -567,12 +541,6 @@ public class AppMain implements Drawing {
         }
 
         if (selectedClusterIndex >= state.clusterCount()) {
-            clearSelection();
-            return;
-        }
-
-        // Invariant: selected member always belongs to the active cluster.
-        if (selectedClusterIndex != activeClusterIndex) {
             clearSelection();
             return;
         }
@@ -660,33 +628,77 @@ public class AppMain implements Drawing {
         showErrorDialog("Unsupported metric/member combination", message);
     }
 
+    private void showSelectionRequired(String message) {
+        showErrorDialog("Selection required", message);
+    }
+
     private void normalizeClusterCountGadget() {
         int requestedClusterCount = state.numberOfClusters;
         String compatibilityError = state.ensureClusterCountMatchesGadget().orElse(null);
-        if (compatibilityError == null) {
-            lastRejectedClusterCount = null;
+        if (compatibilityError != null) {
+            if (!Integer.valueOf(requestedClusterCount).equals(lastRejectedClusterCount)) {
+                lastRejectedClusterCount = requestedClusterCount;
+                showCompatibilityError(compatibilityError);
+            }
             return;
         }
-        if (!Integer.valueOf(requestedClusterCount).equals(lastRejectedClusterCount)) {
-            lastRejectedClusterCount = requestedClusterCount;
-            showCompatibilityError(compatibilityError);
+        lastRejectedClusterCount = null;
+
+        while (state.clusterCount() > state.numberOfClusters) {
+            if (!hasSelection()) {
+                state.numberOfClusters = state.clusterCount();
+                if (!Integer.valueOf(requestedClusterCount).equals(lastRejectedClusterShrinkWithoutSelection)) {
+                    lastRejectedClusterShrinkWithoutSelection = requestedClusterCount;
+                    showSelectionRequired("Select a member first to delete its cluster.");
+                }
+                return;
+            }
+            int removeIdx = selectedClusterIndex;
+            if (!state.removeClusterAt(removeIdx)) {
+                state.numberOfClusters = state.clusterCount();
+                return;
+            }
+            clearSelection();
+            state.resetMemberCountGadgetSync();
+            if (state.clusterCount() > state.numberOfClusters) {
+                state.numberOfClusters = state.clusterCount();
+                showSelectionRequired("Select a member first to delete another cluster.");
+                return;
+            }
         }
+        lastRejectedClusterShrinkWithoutSelection = null;
     }
 
-    private void normalizeActiveClusterMemberCountGadget() {
-        int requestedClusterOneBased = state.activeClusterOneBased;
+    private void normalizeSelectedClusterMemberCountGadget() {
         int requestedMemberCount = state.targetPointCountForActiveCluster;
-        String compatibilityError = state.ensureActiveClusterMemberCount().orElse(null);
+        if (!hasSelection()) {
+            if (requestedMemberCount != memberCountWhileNoSelection) {
+                state.targetPointCountForActiveCluster = memberCountWhileNoSelection;
+                if (!Integer.valueOf(requestedMemberCount).equals(lastRejectedMemberCountWithoutSelection)) {
+                    lastRejectedMemberCountWithoutSelection = requestedMemberCount;
+                    showSelectionRequired("Select a member first to change the member count.");
+                }
+            }
+            return;
+        }
+
+        lastRejectedMemberCountWithoutSelection = null;
+        int clusterIdx = selectedClusterIndex;
+        String compatibilityError = state.ensureMemberCountForCluster(clusterIdx).orElse(null);
         if (compatibilityError == null) {
             lastRejectedMemberCount = null;
-            lastRejectedMemberCountClusterOneBased = -1;
+            lastRejectedMemberCountClusterIndex = -1;
+            memberCountWhileNoSelection = state.targetPointCountForActiveCluster;
+            if (selectedMemberIndex >= state.clusters().get(clusterIdx).size()) {
+                selectMember(clusterIdx, state.clusters().get(clusterIdx).size() - 1);
+            }
             return;
         }
         boolean repeatedRejectedRequest =
-                requestedClusterOneBased == lastRejectedMemberCountClusterOneBased
+                clusterIdx == lastRejectedMemberCountClusterIndex
                         && Integer.valueOf(requestedMemberCount).equals(lastRejectedMemberCount);
         if (!repeatedRejectedRequest) {
-            lastRejectedMemberCountClusterOneBased = requestedClusterOneBased;
+            lastRejectedMemberCountClusterIndex = clusterIdx;
             lastRejectedMemberCount = requestedMemberCount;
             showCompatibilityError(compatibilityError);
         }
@@ -697,7 +709,9 @@ public class AppMain implements Drawing {
         lastRejectedSiteMemberKind = null;
         lastRejectedClusterCount = null;
         lastRejectedMemberCount = null;
-        lastRejectedMemberCountClusterOneBased = -1;
+        lastRejectedMemberCountClusterIndex = -1;
+        lastRejectedMemberCountWithoutSelection = null;
+        lastRejectedClusterShrinkWithoutSelection = null;
     }
 
     private void showErrorDialog(String header, String message) {
@@ -768,9 +782,8 @@ public class AppMain implements Drawing {
             lastValidMetricKind = state.metricKind;
             lastValidSiteMemberKind = state.siteMemberKind;
             clearRejectedGadgetAttempts();
-            activeClusterIndex = state.activeClusterOneBased - 1;
-            prevGadgetActiveClusterOneBased = state.activeClusterOneBased;
             clearSelection();
+            state.resetMemberCountGadgetSync();
         } catch (SceneJsonException | IOException e) {
             state.galleryExample = GalleryExample.CURRENT;
             prevGalleryExample = GalleryExample.CURRENT;
@@ -815,11 +828,9 @@ public class AppMain implements Drawing {
             lastValidMetricKind = state.metricKind;
             lastValidSiteMemberKind = state.siteMemberKind;
             clearRejectedGadgetAttempts();
-            // Match gadget-driven active cluster and clear stale selection indices.
-            activeClusterIndex = state.activeClusterOneBased - 1;
-            prevGadgetActiveClusterOneBased = state.activeClusterOneBased;
             prevGalleryExample = state.galleryExample;
             clearSelection();
+            state.resetMemberCountGadgetSync();
         } catch (SceneJsonException e) {
             showErrorDialog("Load failed", e.getMessage());
             System.err.println("Load failed: " + e.getMessage());

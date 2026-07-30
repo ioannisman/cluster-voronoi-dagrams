@@ -253,14 +253,15 @@ public final class WebClassifyMain {
     }
 
     public static int activeClusterIndex() {
-        return activeClusterIndex;
+        // Selection is the only current cluster; -1 when nothing is selected.
+        return selectedClusterIndex;
     }
 
     public static int activeMemberCount() {
-        if (sceneSnapshot.clusters().isEmpty()) {
+        if (selectedClusterIndex < 0 || selectedClusterIndex >= sceneSnapshot.clusters().size()) {
             return 0;
         }
-        return sceneSnapshot.clusters().get(activeClusterIndex).size();
+        return sceneSnapshot.clusters().get(selectedClusterIndex).size();
     }
 
     public static String siteMemberKindName() {
@@ -286,17 +287,8 @@ public final class WebClassifyMain {
         return sceneSnapshot.clusters().get(index).name();
     }
 
+    /** Kept for API compatibility; active cluster is derived from selection only. */
     public static String setActiveClusterIndex(int index) {
-        if (index < 0 || index >= sceneSnapshot.clusters().size()) {
-            lastError = "Active cluster index out of range";
-            return lastError;
-        }
-        // Selection must belong to the active cluster; clear only when active changes
-        // so per-frame settings sync with the same index does not wipe selection.
-        if (activeClusterIndex != index) {
-            activeClusterIndex = index;
-            clearSelection();
-        }
         lastError = "";
         return "";
     }
@@ -362,31 +354,49 @@ public final class WebClassifyMain {
     }
 
     /**
-     * Cycle the selected member within the active cluster ({@code delta} +1 next / -1 previous).
-     * Matches desktop n/p behavior.
+     * Cycle the selected member within the selected cluster ({@code delta} +1 next / -1 previous).
+     * @return empty on success, otherwise an error message
      */
-    public static void cycleSelectedMember(int delta) {
-        if (sceneSnapshot.clusters().isEmpty()) {
-            return;
+    public static String cycleSelectedMember(int delta) {
+        if (selectedClusterIndex < 0 || selectedMemberIndex < 0) {
+            lastError = "Select a member first to cycle within its cluster.";
+            return lastError;
         }
-        if (activeClusterIndex < 0 || activeClusterIndex >= sceneSnapshot.clusters().size()) {
-            activeClusterIndex = 0;
-        }
-        ClusterSite cluster = sceneSnapshot.clusters().get(activeClusterIndex);
+        ClusterSite cluster = sceneSnapshot.clusters().get(selectedClusterIndex);
         int memberCount = cluster.size();
         if (memberCount <= 0) {
-            return;
+            lastError = "Selected cluster has no members";
+            return lastError;
         }
-        int current = (selectedClusterIndex == activeClusterIndex && selectedMemberIndex >= 0)
-                ? selectedMemberIndex
-                : (delta > 0 ? -1 : 0);
-        int next = Math.floorMod(current + delta, memberCount);
-        selectedClusterIndex = activeClusterIndex;
+        int next = Math.floorMod(selectedMemberIndex + delta, memberCount);
         selectedMemberIndex = next;
         selectedHandleIndex = HandleVisibility.primaryHandleIndex(cluster.members().get(next));
+        activeClusterIndex = selectedClusterIndex;
+        lastError = "";
+        return "";
     }
 
-    /** Adds a member of the current site kind to the active cluster at the given world point. */
+    /**
+     * Select the first member of the next/previous cluster (Shift+n/p).
+     */
+    public static String cycleSelectedCluster(int delta) {
+        int clusterCount = sceneSnapshot.clusters().size();
+        if (clusterCount <= 0) {
+            lastError = "No clusters";
+            return lastError;
+        }
+        int current = selectedClusterIndex >= 0 ? selectedClusterIndex : 0;
+        int next = Math.floorMod(current + delta, clusterCount);
+        ClusterSite cluster = sceneSnapshot.clusters().get(next);
+        selectedClusterIndex = next;
+        selectedMemberIndex = 0;
+        selectedHandleIndex = HandleVisibility.primaryHandleIndex(cluster.members().get(0));
+        activeClusterIndex = next;
+        lastError = "";
+        return "";
+    }
+
+    /** Adds a member of the current site kind to the selected cluster at the given world point. */
     public static String addMemberAt(double worldX, double worldY) {
         Optional<String> invalid = MetricMemberCompatibility.invalidNewMemberMessage(
                 sceneSnapshot.metricKind(),
@@ -396,45 +406,44 @@ public final class WebClassifyMain {
             lastError = invalid.get();
             return lastError;
         }
-        if (sceneSnapshot.clusters().isEmpty()) {
-            lastError = "No clusters to add a member to";
+        if (selectedClusterIndex < 0) {
+            lastError = "Select a member first to add to its cluster.";
             return lastError;
         }
-        ClusterSite cluster = sceneSnapshot.clusters().get(activeClusterIndex);
+        ClusterSite cluster = sceneSnapshot.clusters().get(selectedClusterIndex);
         if (cluster.size() >= SceneLimits.MAX_MEMBERS_PER_CLUSTER) {
-            lastError = "Active cluster already has the maximum number of members";
+            lastError = "Selected cluster already has the maximum number of members";
             return lastError;
         }
+        int clusterIdx = selectedClusterIndex;
         ClusterMember member = SiteMemberFactory.createDefault(
                 sceneSnapshot.siteMemberKind(),
-                activeClusterIndex,
+                clusterIdx,
                 cluster.size(),
                 Vector.xy(worldX, worldY)
         );
         cluster.addMember(member);
-        selectedClusterIndex = activeClusterIndex;
+        selectedClusterIndex = clusterIdx;
         selectedMemberIndex = cluster.size() - 1;
         selectedHandleIndex = HandleVisibility.primaryHandleIndex(member);
+        activeClusterIndex = clusterIdx;
         lastError = "";
         return "";
     }
 
-    /** Removes the selected member, or the last member of the active cluster if nothing is selected. */
+    /** Removes the selected member. */
     public static String removeMember() {
-        if (sceneSnapshot.clusters().isEmpty()) {
-            lastError = "No clusters";
+        if (selectedClusterIndex < 0 || selectedMemberIndex < 0) {
+            lastError = "Select a member first to delete it.";
             return lastError;
         }
-        int clusterIdx = selectedClusterIndex >= 0 ? selectedClusterIndex : activeClusterIndex;
-        int memberIdx = selectedMemberIndex;
-        ClusterSite cluster = sceneSnapshot.clusters().get(clusterIdx);
-        if (memberIdx < 0 || memberIdx >= cluster.size()) {
-            memberIdx = cluster.size() - 1;
-        }
+        ClusterSite cluster = sceneSnapshot.clusters().get(selectedClusterIndex);
         if (cluster.size() <= 1) {
             lastError = "Cannot remove the last member of a cluster";
             return lastError;
         }
+        int clusterIdx = selectedClusterIndex;
+        int memberIdx = selectedMemberIndex;
         cluster.removeMember(memberIdx);
         selectedClusterIndex = clusterIdx;
         selectedMemberIndex = Math.min(memberIdx, cluster.size() - 1);
@@ -472,7 +481,12 @@ public final class WebClassifyMain {
             lastError = "Cannot remove the last cluster";
             return lastError;
         }
-        sceneSnapshot.clusters().remove(activeClusterIndex);
+        if (selectedClusterIndex < 0) {
+            lastError = "Select a member first to delete its cluster.";
+            return lastError;
+        }
+        int removeIdx = selectedClusterIndex;
+        sceneSnapshot.clusters().remove(removeIdx);
         if (activeClusterIndex >= sceneSnapshot.clusters().size()) {
             activeClusterIndex = sceneSnapshot.clusters().size() - 1;
         }
@@ -935,7 +949,10 @@ public final class WebClassifyMain {
                     + "    javaMethods.get('cvdexplorer.web.WebClassifyMain.selectHandle(I)V').invoke(index);"
                     + "  },"
                     + "  cycleSelectedMember: function (delta) {"
-                    + "    javaMethods.get('cvdexplorer.web.WebClassifyMain.cycleSelectedMember(I)V').invoke(delta);"
+                    + "    return javaMethods.get('cvdexplorer.web.WebClassifyMain.cycleSelectedMember(I)Ljava/lang/String;').invoke(delta);"
+                    + "  },"
+                    + "  cycleSelectedCluster: function (delta) {"
+                    + "    return javaMethods.get('cvdexplorer.web.WebClassifyMain.cycleSelectedCluster(I)Ljava/lang/String;').invoke(delta);"
                     + "  },"
                     + "  clearSelection: function () {"
                     + "    javaMethods.get('cvdexplorer.web.WebClassifyMain.clearSelection()V').invoke();"

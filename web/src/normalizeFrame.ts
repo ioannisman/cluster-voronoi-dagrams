@@ -82,7 +82,7 @@ export function normalizeFrame(frame: CvdFrame): CvdFrame {
     shading: !!frame.scene?.shading,
     lastError: frame.scene?.lastError ?? '',
     clusterCount: frame.scene?.clusterCount ?? 0,
-    activeClusterIndex: frame.scene?.activeClusterIndex ?? 0,
+    activeClusterIndex: frame.scene?.activeClusterIndex ?? -1,
     activeMemberCount: frame.scene?.activeMemberCount ?? 0,
     siteMemberKind: frame.scene?.siteMemberKind ?? 'POINT',
     selectedClusterIndex: frame.scene?.selectedClusterIndex ?? -1,

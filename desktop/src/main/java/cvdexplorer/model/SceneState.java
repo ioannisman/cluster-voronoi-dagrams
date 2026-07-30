@@ -24,16 +24,12 @@ public final class SceneState {
     @Properties(name = "Number of clusters (Shift+a/d)")
     public int numberOfClusters = 1;
 
-    @GadgetInteger(min = 1, max = MAX_CLUSTERS)
-    @Properties(name = "Active cluster (Shift+n/p)")
-    public int activeClusterOneBased = 1;
-
     @GadgetInteger(min = 1, max = MAX_MEMBERS_PER_CLUSTER)
-    @Properties(name = "Members in active cluster (n/p, a/d)")
+    @Properties(name = "Members in selected cluster (a/d)")
     public int targetPointCountForActiveCluster = 1;
 
     @GadgetEnum(enumClass = SiteMemberKind.class)
-    @Properties(name = "New member type (a)")
+    @Properties(name = "New member type")
     public SiteMemberKind siteMemberKind = SiteMemberKind.POINT;
 
     @GadgetEnum(enumClass = MetricKind.class)
@@ -88,7 +84,7 @@ public final class SceneState {
     private final List<ClusterSite> clusters = new ArrayList<>();
     private final Rgba backgroundColor = Rgba.gray(0.92);
 
-    private int lastActiveClusterOneBasedForMemberSync = -1;
+    private int lastMemberSyncClusterIndex = -1;
 
     public static SceneState demo() {
         SceneSnapshot snap = DemoScenes.defaultSnapshot();
@@ -100,9 +96,8 @@ public final class SceneState {
                 snap.clusters(),
                 snap.nearestNeighborK()
         );
-        state.activeClusterOneBased = 1;
         state.targetPointCountForActiveCluster = state.clusters.get(0).size();
-        state.lastActiveClusterOneBasedForMemberSync = -1;
+        state.lastMemberSyncClusterIndex = -1;
         return state;
     }
 
@@ -167,9 +162,8 @@ public final class SceneState {
             clusters.add(site);
         }
         numberOfClusters = clusters.size();
-        activeClusterOneBased = Math.max(1, Math.min(numberOfClusters, activeClusterOneBased));
-        targetPointCountForActiveCluster = clusters.get(activeClusterOneBased - 1).size();
-        lastActiveClusterOneBasedForMemberSync = activeClusterOneBased;
+        targetPointCountForActiveCluster = clusters.get(0).size();
+        lastMemberSyncClusterIndex = -1;
         clampNearestNeighborK();
     }
 
@@ -189,9 +183,8 @@ public final class SceneState {
         fastDrawPreview = other.fastDrawPreview;
         siteMemberKind = other.siteMemberKind;
         numberOfClusters = other.numberOfClusters;
-        activeClusterOneBased = other.activeClusterOneBased;
         targetPointCountForActiveCluster = other.targetPointCountForActiveCluster;
-        lastActiveClusterOneBasedForMemberSync = -1;
+        lastMemberSyncClusterIndex = -1;
 
         clusters.clear();
         for (ClusterSite cluster : other.clusters) {
@@ -200,14 +193,11 @@ public final class SceneState {
         if (numberOfClusters != clusters.size()) {
             numberOfClusters = clusters.size();
         }
-        int n = Math.max(1, clusters.size());
-        activeClusterOneBased = Math.max(1, Math.min(n, activeClusterOneBased));
     }
 
     /**
-     * Removes the cluster at {@code index}. Updates {@link #numberOfClusters} and clamps
-     * {@link #activeClusterOneBased}. No-op (returns {@code false}) if fewer than two clusters
-     * or {@code index} is out of range.
+     * Removes the cluster at {@code index}. Updates {@link #numberOfClusters}.
+     * No-op (returns {@code false}) if fewer than two clusters or {@code index} is out of range.
      */
     public boolean removeClusterAt(int index) {
         if (clusters.size() <= 1 || index < 0 || index >= clusters.size()) {
@@ -215,52 +205,52 @@ public final class SceneState {
         }
         clusters.remove(index);
         numberOfClusters = clusters.size();
-        if (index < activeClusterOneBased - 1) {
-            activeClusterOneBased--;
-        } else {
-            activeClusterOneBased = Math.max(1, Math.min(clusters.size(), activeClusterOneBased));
-        }
+        lastMemberSyncClusterIndex = -1;
         return true;
     }
 
+    /**
+     * Grows the cluster list to match {@link #numberOfClusters}. Does not shrink;
+     * the app removes a selected cluster when the count decreases.
+     */
     public Optional<String> ensureClusterCountMatchesGadget() {
         numberOfClusters = Math.max(1, Math.min(MAX_CLUSTERS, numberOfClusters));
         while (clusters.size() < numberOfClusters) {
             Optional<String> invalidNewMember = MetricMemberCompatibility.invalidNewMemberMessage(metricKind, siteMemberKind);
             if (invalidNewMember.isPresent()) {
                 numberOfClusters = clusters.size();
-                activeClusterOneBased = Math.max(1, Math.min(clusters.size(), activeClusterOneBased));
                 return invalidNewMember;
             }
             clusters.add(defaultCluster(clusters.size()));
         }
-        int targetCount = numberOfClusters;
-        while (clusters.size() > targetCount) {
-            int removeIdx = Math.min(Math.max(0, activeClusterOneBased - 1), clusters.size() - 1);
-            clusters.remove(removeIdx);
-            activeClusterOneBased = Math.max(1, Math.min(clusters.size(), activeClusterOneBased));
+        if (numberOfClusters > clusters.size()) {
+            numberOfClusters = clusters.size();
         }
-        numberOfClusters = clusters.size();
         return Optional.empty();
     }
 
-    public Optional<String> ensureActiveClusterMemberCount() {
-        if (clusters.isEmpty()) {
+    /**
+     * Syncs member count for the given cluster to {@link #targetPointCountForActiveCluster}.
+     * When {@code clusterIndex} changes from the last sync, resets the target to that cluster's size.
+     */
+    public Optional<String> ensureMemberCountForCluster(int clusterIndex) {
+        if (clusters.isEmpty() || clusterIndex < 0 || clusterIndex >= clusters.size()) {
             return Optional.empty();
         }
 
-        activeClusterOneBased = Math.max(1, Math.min(clusters.size(), activeClusterOneBased));
         targetPointCountForActiveCluster = Math.max(
                 1,
                 Math.min(MAX_MEMBERS_PER_CLUSTER, targetPointCountForActiveCluster)
         );
 
-        if (activeClusterOneBased != lastActiveClusterOneBasedForMemberSync) {
-            targetPointCountForActiveCluster = clusters.get(activeClusterOneBased - 1).size();
-            lastActiveClusterOneBasedForMemberSync = activeClusterOneBased;
+        if (clusterIndex != lastMemberSyncClusterIndex) {
+            // Switching clusters adopts that cluster's size; first sync after reset keeps the gadget value.
+            if (lastMemberSyncClusterIndex >= 0) {
+                targetPointCountForActiveCluster = clusters.get(clusterIndex).size();
+            }
+            lastMemberSyncClusterIndex = clusterIndex;
         }
 
-        int clusterIndex = activeClusterOneBased - 1;
         ClusterSite cluster = clusters.get(clusterIndex);
 
         while (cluster.size() < targetPointCountForActiveCluster) {
@@ -276,6 +266,11 @@ public final class SceneState {
             cluster.removeMember(cluster.size() - 1);
         }
         return Optional.empty();
+    }
+
+    /** Resets member-count gadget sync so the next selection adopts the cluster's real size. */
+    public void resetMemberCountGadgetSync() {
+        lastMemberSyncClusterIndex = -1;
     }
 
     private static Vector centroidOfMembers(List<ClusterMember> members) {

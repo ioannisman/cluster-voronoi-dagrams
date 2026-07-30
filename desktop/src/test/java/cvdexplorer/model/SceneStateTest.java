@@ -4,7 +4,6 @@ import cvdexplorer.metric.MetricKind;
 import org.junit.jupiter.api.Test;
 import cvdexplorer.geometry.Vector;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
@@ -68,7 +67,6 @@ class SceneStateTest {
     @Test
     void applyLoadedSceneReplacesClustersAndClampsK() {
         SceneState state = new SceneState();
-        state.activeClusterOneBased = 1;
         state.clusters().clear();
         state.clusters().add(new ClusterSite("Old", Rgba.BLACK, List.of(new PointMember(Vector.xy(0, 0)))));
 
@@ -79,27 +77,21 @@ class SceneStateTest {
                 )),
                 new ClusterSite("C2", Rgba.BLUE, List.of(new PointMember(Vector.xy(3, 3))))
         );
-
         state.applyLoadedScene(
-                MetricKind.KTH_NEAREST_DISTANCE,
-                NeighborOrder.FARTHEST,
+                MetricKind.MINIMUM_DISTANCE,
+                NeighborOrder.NEAREST,
                 SiteMemberKind.POINT,
                 incoming,
                 99
         );
-
-        assertEquals(MetricKind.KTH_NEAREST_DISTANCE, state.metricKind);
-        assertEquals(NeighborOrder.FARTHEST, state.neighborOrder);
-        assertEquals(SiteMemberKind.POINT, state.siteMemberKind);
-        assertEquals(2, state.clusters().size());
-        assertEquals("C1", state.clusters().get(0).name());
+        assertEquals(2, state.clusterCount());
         assertEquals(1, state.nearestNeighborK);
+        assertEquals(2, state.targetPointCountForActiveCluster);
     }
 
     @Test
-    void applyLoadedSceneThrowsWhenClusterListEmpty() {
+    void applyLoadedSceneRejectsEmptyOrTooManyClusters() {
         SceneState state = new SceneState();
-        state.clusters().add(new ClusterSite("X", Rgba.GRAY, List.of(new PointMember(Vector.xy(0, 0)))));
         assertThrows(IllegalArgumentException.class, () ->
                 state.applyLoadedScene(
                         MetricKind.MINIMUM_DISTANCE,
@@ -109,14 +101,9 @@ class SceneStateTest {
                         1
                 )
         );
-    }
-
-    @Test
-    void applyLoadedSceneThrowsWhenTooManyClusters() {
-        SceneState state = new SceneState();
-        List<ClusterSite> tooMany = new ArrayList<>();
+        List<ClusterSite> tooMany = new java.util.ArrayList<>();
         for (int i = 0; i < SceneState.MAX_CLUSTERS + 1; i++) {
-            tooMany.add(new ClusterSite("c" + i, Rgba.GRAY, List.of(new PointMember(Vector.xy(i, 0)))));
+            tooMany.add(new ClusterSite("C" + i, Rgba.RED, List.of(new PointMember(Vector.xy(i, 0)))));
         }
         assertThrows(IllegalArgumentException.class, () ->
                 state.applyLoadedScene(
@@ -137,7 +124,6 @@ class SceneStateTest {
         state.clusters().add(new ClusterSite("B", Rgba.GREEN, List.of(new PointMember(Vector.xy(1, 0)))));
         state.clusters().add(new ClusterSite("C", Rgba.BLUE, List.of(new PointMember(Vector.xy(2, 0)))));
         state.numberOfClusters = 3;
-        state.activeClusterOneBased = 2;
 
         assertTrue(state.removeClusterAt(1));
 
@@ -145,27 +131,22 @@ class SceneStateTest {
         assertEquals("A", state.clusters().get(0).name());
         assertEquals("C", state.clusters().get(1).name());
         assertEquals(2, state.numberOfClusters);
-        assertEquals(2, state.activeClusterOneBased);
     }
 
     @Test
-    void ensureClusterCountMatchesGadgetShrinkRemovesActiveNotLast() {
+    void ensureClusterCountMatchesGadgetGrowsButDoesNotShrink() {
         SceneState state = new SceneState();
         state.clusters().clear();
         state.clusters().add(new ClusterSite("A", Rgba.RED, List.of(new PointMember(Vector.xy(0, 0)))));
         state.clusters().add(new ClusterSite("B", Rgba.GREEN, List.of(new PointMember(Vector.xy(1, 0)))));
         state.clusters().add(new ClusterSite("C", Rgba.BLUE, List.of(new PointMember(Vector.xy(2, 0)))));
-        state.numberOfClusters = 3;
-        state.activeClusterOneBased = 1;
         state.numberOfClusters = 2;
 
         Optional<String> msg = state.ensureClusterCountMatchesGadget();
 
         assertTrue(msg.isEmpty());
-        assertEquals(2, state.clusters().size());
-        assertEquals("B", state.clusters().get(0).name());
-        assertEquals("C", state.clusters().get(1).name());
-        assertEquals(1, state.activeClusterOneBased);
+        assertEquals(3, state.clusters().size());
+        assertEquals(2, state.numberOfClusters);
     }
 
     @Test
@@ -177,7 +158,6 @@ class SceneStateTest {
         state.numberOfClusters = 1;
         state.metricKind = MetricKind.SUM_OF_DISTANCES;
         state.siteMemberKind = SiteMemberKind.LINE;
-        state.activeClusterOneBased = 1;
         state.numberOfClusters = 2;
 
         Optional<String> msg = state.ensureClusterCountMatchesGadget();
@@ -189,11 +169,10 @@ class SceneStateTest {
     }
 
     @Test
-    void ensureActiveClusterMemberCountRejectsAddingIncompatibleMember() {
+    void ensureMemberCountForClusterRejectsAddingIncompatibleMember() {
         ClusterSite cluster = new ClusterSite("A", Rgba.CYAN, List.of(new PointMember(Vector.xy(10, 10))));
         List<ClusterSite> loaded = List.of(cluster);
         SceneState state = new SceneState();
-        state.activeClusterOneBased = 1;
         state.applyLoadedScene(
                 MetricKind.MEAN_DISTANCE,
                 NeighborOrder.NEAREST,
@@ -203,7 +182,7 @@ class SceneStateTest {
         );
         state.targetPointCountForActiveCluster = 2;
 
-        Optional<String> msg = state.ensureActiveClusterMemberCount();
+        Optional<String> msg = state.ensureMemberCountForCluster(0);
 
         assertTrue(msg.isPresent());
         assertTrue(msg.get().contains("MEAN_DISTANCE"));
