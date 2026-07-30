@@ -26,7 +26,7 @@ public final class HelpOverlay {
                 "    a               - Add member (type from gadget) at pointer",
                 "    d               - Remove selected member",
                 "    Shift+a         - Add cluster",
-                "    Shift+d         - Remove last cluster (gadget count)",
+                "    Shift+d         - Remove active cluster",
                 "    r               - Reset to the demo scene",
                 "    Ctrl+s          - Save scene (JSON)",
                 "    Ctrl+o          - Load scene (JSON)",

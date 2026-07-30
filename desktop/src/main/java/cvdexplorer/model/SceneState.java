@@ -204,6 +204,25 @@ public final class SceneState {
         activeClusterOneBased = Math.max(1, Math.min(n, activeClusterOneBased));
     }
 
+    /**
+     * Removes the cluster at {@code index}. Updates {@link #numberOfClusters} and clamps
+     * {@link #activeClusterOneBased}. No-op (returns {@code false}) if fewer than two clusters
+     * or {@code index} is out of range.
+     */
+    public boolean removeClusterAt(int index) {
+        if (clusters.size() <= 1 || index < 0 || index >= clusters.size()) {
+            return false;
+        }
+        clusters.remove(index);
+        numberOfClusters = clusters.size();
+        if (index < activeClusterOneBased - 1) {
+            activeClusterOneBased--;
+        } else {
+            activeClusterOneBased = Math.max(1, Math.min(clusters.size(), activeClusterOneBased));
+        }
+        return true;
+    }
+
     public Optional<String> ensureClusterCountMatchesGadget() {
         numberOfClusters = Math.max(1, Math.min(MAX_CLUSTERS, numberOfClusters));
         while (clusters.size() < numberOfClusters) {
@@ -215,10 +234,13 @@ public final class SceneState {
             }
             clusters.add(defaultCluster(clusters.size()));
         }
-        while (clusters.size() > numberOfClusters) {
-            clusters.remove(clusters.size() - 1);
+        int targetCount = numberOfClusters;
+        while (clusters.size() > targetCount) {
+            int removeIdx = Math.min(Math.max(0, activeClusterOneBased - 1), clusters.size() - 1);
+            clusters.remove(removeIdx);
+            activeClusterOneBased = Math.max(1, Math.min(clusters.size(), activeClusterOneBased));
         }
-        activeClusterOneBased = Math.max(1, Math.min(clusters.size(), activeClusterOneBased));
+        numberOfClusters = clusters.size();
         return Optional.empty();
     }
 

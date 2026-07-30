@@ -343,9 +343,10 @@ public class AppMain implements Drawing {
 
         if (event.isKeyPress(KeyCode.D)) {
             if (inputState.keyPressed(KeyCode.SHIFT)) {
-                if (state.numberOfClusters > 1) {
-                    state.numberOfClusters--;
-                    state.ensureClusterCountMatchesGadget();
+                int removeIdx = activeClusterIndex >= 0
+                        ? activeClusterIndex
+                        : state.activeClusterOneBased - 1;
+                if (state.removeClusterAt(removeIdx)) {
                     activeClusterIndex = state.activeClusterOneBased - 1;
                     prevGadgetActiveClusterOneBased = state.activeClusterOneBased;
                     state.targetPointCountForActiveCluster = state.clusters().get(activeClusterIndex).size();

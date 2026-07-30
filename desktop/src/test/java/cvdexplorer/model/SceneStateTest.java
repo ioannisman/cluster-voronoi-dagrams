@@ -130,6 +130,45 @@ class SceneStateTest {
     }
 
     @Test
+    void removeClusterAtRemovesGivenIndexNotLast() {
+        SceneState state = new SceneState();
+        state.clusters().clear();
+        state.clusters().add(new ClusterSite("A", Rgba.RED, List.of(new PointMember(Vector.xy(0, 0)))));
+        state.clusters().add(new ClusterSite("B", Rgba.GREEN, List.of(new PointMember(Vector.xy(1, 0)))));
+        state.clusters().add(new ClusterSite("C", Rgba.BLUE, List.of(new PointMember(Vector.xy(2, 0)))));
+        state.numberOfClusters = 3;
+        state.activeClusterOneBased = 2;
+
+        assertTrue(state.removeClusterAt(1));
+
+        assertEquals(2, state.clusters().size());
+        assertEquals("A", state.clusters().get(0).name());
+        assertEquals("C", state.clusters().get(1).name());
+        assertEquals(2, state.numberOfClusters);
+        assertEquals(2, state.activeClusterOneBased);
+    }
+
+    @Test
+    void ensureClusterCountMatchesGadgetShrinkRemovesActiveNotLast() {
+        SceneState state = new SceneState();
+        state.clusters().clear();
+        state.clusters().add(new ClusterSite("A", Rgba.RED, List.of(new PointMember(Vector.xy(0, 0)))));
+        state.clusters().add(new ClusterSite("B", Rgba.GREEN, List.of(new PointMember(Vector.xy(1, 0)))));
+        state.clusters().add(new ClusterSite("C", Rgba.BLUE, List.of(new PointMember(Vector.xy(2, 0)))));
+        state.numberOfClusters = 3;
+        state.activeClusterOneBased = 1;
+        state.numberOfClusters = 2;
+
+        Optional<String> msg = state.ensureClusterCountMatchesGadget();
+
+        assertTrue(msg.isEmpty());
+        assertEquals(2, state.clusters().size());
+        assertEquals("B", state.clusters().get(0).name());
+        assertEquals("C", state.clusters().get(1).name());
+        assertEquals(1, state.activeClusterOneBased);
+    }
+
+    @Test
     void ensureClusterCountMatchesGadgetRejectsIncompatibleNewClusterMember() {
         ClusterSite first = new ClusterSite("A", Rgba.ORANGE, List.of(new PointMember(Vector.xy(0, 0))));
         SceneState state = new SceneState();
