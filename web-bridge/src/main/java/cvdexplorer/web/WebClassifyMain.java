@@ -291,7 +291,12 @@ public final class WebClassifyMain {
             lastError = "Active cluster index out of range";
             return lastError;
         }
-        activeClusterIndex = index;
+        // Selection must belong to the active cluster; clear only when active changes
+        // so per-frame settings sync with the same index does not wipe selection.
+        if (activeClusterIndex != index) {
+            activeClusterIndex = index;
+            clearSelection();
+        }
         lastError = "";
         return "";
     }

@@ -106,6 +106,8 @@ public class AppMain implements Drawing {
         if (g != prevGadgetActiveClusterOneBased) {
             activeClusterIndex = g - 1;
             prevGadgetActiveClusterOneBased = g;
+            // Selection must belong to the active cluster; drop it when active changes.
+            clearSelection();
         }
 
         normalizeSelection();
@@ -504,6 +506,9 @@ public class AppMain implements Drawing {
         state.activeClusterOneBased = next + 1;
         activeClusterIndex = next;
         prevGadgetActiveClusterOneBased = state.activeClusterOneBased;
+        if (next != current) {
+            clearSelection();
+        }
     }
 
     private void cycleSelectedMemberInActiveCluster(int delta) {
@@ -561,6 +566,12 @@ public class AppMain implements Drawing {
         }
 
         if (selectedClusterIndex >= state.clusterCount()) {
+            clearSelection();
+            return;
+        }
+
+        // Invariant: selected member always belongs to the active cluster.
+        if (selectedClusterIndex != activeClusterIndex) {
             clearSelection();
             return;
         }

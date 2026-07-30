@@ -1851,7 +1851,10 @@ cw_WebClassifyMain_setActiveClusterIndex$jsocb$_49 = var$1 => {
     cw_WebClassifyMain_$callClinit();
     var$2 = var$1;
     if (var$2 >= 0 && var$2 < cw_WebClassifyMain_sceneSnapshot.$clusters0.$size0) {
-        cw_WebClassifyMain_activeClusterIndex = var$2;
+        if (cw_WebClassifyMain_activeClusterIndex != var$2) {
+            cw_WebClassifyMain_activeClusterIndex = var$2;
+            cw_WebClassifyMain_clearSelection();
+        }
         cw_WebClassifyMain_lastError = $rt_s(4);
         var$1 = $rt_s(4);
     } else {

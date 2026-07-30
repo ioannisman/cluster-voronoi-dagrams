@@ -577,6 +577,12 @@ function onPointerDown(event: PointerEvent): void {
   }
 
   if (nearest !== null && toggleMembers!.checked && event.button === 0) {
+    // Keep the cluster control aligned with the handle's cluster before settings sync,
+    // so a stale activeClusterIndex does not clear the new selection in the worker.
+    const handleCluster = latestFrame?.handles.cluster[nearest];
+    if (handleCluster != null && Number.isFinite(handleCluster)) {
+      selectCluster!.value = String(handleCluster);
+    }
     draggingHandle = nearest;
     canvas!.setPointerCapture(event.pointerId);
     updateCursor();
