@@ -1,18 +1,53 @@
 /// <reference lib="webworker" />
 
 import type { CvdAuthoringAction, CvdCore, CvdSceneSettings } from './teavm.d.ts';
-import type { WorkerRequest, WorkerResponse } from './workerMessages';
+import {
+  rasterOutputMask,
+  type RasterOutputs,
+  type WorkerRequest,
+  type WorkerResponse,
+} from './workerMessages';
 import { normalizeFrame } from './normalizeFrame';
 
 declare const self: DedicatedWorkerGlobalScope;
 
-function post(msg: WorkerResponse): void {
-  self.postMessage(msg);
+function post(msg: WorkerResponse, transfer: Transferable[] = []): void {
+  self.postMessage(msg, transfer);
+}
+
+function epochNow(): number {
+  return performance.timeOrigin + performance.now();
+}
+
+function assertRasterOutputs(
+  frame: ReturnType<typeof normalizeFrame>,
+  width: number,
+  height: number,
+  outputs: RasterOutputs
+): void {
+  const expectedLength = width * height;
+  const checks = [
+    ['argb', outputs.argb, frame.argb],
+    ['owners', outputs.owners, frame.owners],
+    ['members', outputs.members, frame.members],
+  ] as const;
+  for (const [name, requested, values] of checks) {
+    if (requested && values?.length !== expectedLength) {
+      throw new Error(
+        `${name} raster length ${values?.length ?? 'missing'} does not match ${expectedLength}`
+      );
+    }
+    if (!requested && values != null) {
+      throw new Error(`${name} raster was returned without being requested`);
+    }
+  }
 }
 
 function cvdCore(): CvdCore {
   const core = (globalThis as typeof globalThis & { cvdCore?: CvdCore }).cvdCore;
   if (
+    !core?.computeFrame ||
+    !core.exportFrame ||
     !core?.renderFrame ||
     !core.moveHandle ||
     !core.beginHandleDrag ||
@@ -111,6 +146,7 @@ self.onmessage = (event: MessageEvent<WorkerRequest>) => {
       }
 
       if (msg.type === 'frame') {
+        const workerStart = performance.now();
         const core = cvdCore();
         if (msg.settings) {
           applySettings(core, msg.settings);
@@ -126,9 +162,20 @@ self.onmessage = (event: MessageEvent<WorkerRequest>) => {
             msg.move.coMove !== false
           );
         }
-        const t0 = performance.now();
-        const raw = core.renderFrame(msg.width, msg.height);
+
+        const outputMask = rasterOutputMask(msg.outputs);
+        const classifyStart = performance.now();
+        core.computeFrame(msg.width, msg.height, msg.preview, outputMask);
+        const classifyMs = performance.now() - classifyStart;
+
+        const exportStart = performance.now();
+        const raw = core.exportFrame(outputMask);
+        const exportMs = performance.now() - exportStart;
+
+        const normalizeStart = performance.now();
         const frame = normalizeFrame(raw);
+        assertRasterOutputs(frame, msg.width, msg.height, msg.outputs);
+        const normalizeMs = performance.now() - normalizeStart;
         // Stamp request settings so the UI can ignore stale frames when syncing controls.
         if (msg.settings?.worldView != null) {
           frame.worldView = { ...msg.settings.worldView };
@@ -136,8 +183,24 @@ self.onmessage = (event: MessageEvent<WorkerRequest>) => {
         if (msg.settings?.siteMemberKind != null) {
           frame.requestedSiteMemberKind = msg.settings.siteMemberKind;
         }
-        const ms = performance.now() - t0;
-        post({ type: 'frame', requestId: msg.requestId, ms, frame });
+        const response: WorkerResponse = {
+          type: 'frame',
+          requestId: msg.requestId,
+          requestedAtEpochMs: msg.requestedAtEpochMs,
+          postedAtEpochMs: epochNow(),
+          timings: {
+            classifyMs,
+            exportMs,
+            normalizeMs,
+            workerMs: performance.now() - workerStart,
+          },
+          frame,
+        };
+        const transfer: Transferable[] = [];
+        if (frame.argb instanceof Int32Array) transfer.push(frame.argb.buffer);
+        if (frame.owners instanceof Int32Array) transfer.push(frame.owners.buffer);
+        if (frame.members instanceof Int32Array) transfer.push(frame.members.buffer);
+        post(response, transfer);
       }
     } catch (err: unknown) {
       post({
