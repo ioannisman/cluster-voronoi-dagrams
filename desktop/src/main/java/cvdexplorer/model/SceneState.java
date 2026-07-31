@@ -230,8 +230,8 @@ public final class SceneState {
     }
 
     /**
-     * Syncs member count for the given cluster to {@link #targetPointCountForActiveCluster}.
-     * When {@code clusterIndex} changes from the last sync, resets the target to that cluster's size.
+     * Grows member count for the given cluster to match {@link #targetPointCountForActiveCluster}.
+     * Does not shrink; the app removes the selected member when the count decreases.
      */
     public Optional<String> ensureMemberCountForCluster(int clusterIndex) {
         if (clusters.isEmpty() || clusterIndex < 0 || clusterIndex >= clusters.size()) {
@@ -261,9 +261,6 @@ public final class SceneState {
             }
             Vector hint = jitteredNewMemberHint(cluster, clusterIndex, cluster.size());
             cluster.addMember(SiteMemberFactory.createDefault(siteMemberKind, clusterIndex, cluster.size(), hint));
-        }
-        while (cluster.size() > targetPointCountForActiveCluster) {
-            cluster.removeMember(cluster.size() - 1);
         }
         return Optional.empty();
     }

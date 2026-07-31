@@ -8,14 +8,13 @@ Small limitations and rough edges. Add new items under the matching section.
 
 ## Desktop & web
 
-- Delete member removes the highest-index member, not the selected one
 - Add cluster does not place the new cluster near the mouse
-- Selection highlight is reversed: non-selected members are emphasized, whereas the selected member should be
 
 ## Desktop
 
--
+- If another cursor button other from the topmost is pressed, then nothing works.
 
 ## Web
 
 - Initial zoom / view scale differs from desktop
+- Extremely slow

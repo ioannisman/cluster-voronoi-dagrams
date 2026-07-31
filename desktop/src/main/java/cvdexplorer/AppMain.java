@@ -26,6 +26,8 @@ import cvdexplorer.render.MemberOverlayRenderer;
 import cvdexplorer.render.RasterDiagramRenderer;
 import cvdexplorer.render.SkeletonOverlayRenderer;
 import javafx.application.Platform;
+import javafx.scene.Node;
+import javafx.scene.Scene;
 import javafx.scene.image.Image;
 import javafx.scene.control.Alert;
 import javafx.scene.paint.Color;
@@ -83,11 +85,26 @@ public class AppMain implements Drawing {
     private Integer lastRejectedMemberCount = null;
     private int lastRejectedMemberCountClusterIndex = -1;
     private Integer lastRejectedMemberCountWithoutSelection = null;
-    private Integer lastRejectedClusterShrinkWithoutSelection = null;
+    /**
+     * Cluster-count gadget requested a shrink we could not fully apply. Snap back silently
+     * until the gadget value moves strictly above this request (avoids draw-loop fights).
+     */
+    private Integer stuckClusterShrinkRequest = null;
+    /**
+     * Member-count gadget requested a shrink we could not fully apply (same latch idea as clusters).
+     */
+    private Integer stuckMemberShrinkRequest = null;
     /** Member-count gadget value frozen while nothing is selected. */
     private int memberCountWhileNoSelection = state.targetPointCountForActiveCluster;
     private Alert activeErrorAlert = null;
     private String activeErrorDialogKey = null;
+    /**
+     * Key-triggered alerts must wait until the triggering keys are released. Otherwise the Alert
+     * steals focus before KEY_RELEASED reaches drawing-fx, InputState keeps the key "pressed",
+     * and the next KEY_PRESSED is dropped (Set.add returns false) — so d / Shift+d need two presses.
+     */
+    private String pendingErrorHeader = null;
+    private String pendingErrorMessage = null;
 
     private List<Selection> coMovingHandles = List.of();
     private Vector snapTargetPosition = null;
@@ -228,6 +245,7 @@ public class AppMain implements Drawing {
                 selectedHandleIndex = selection.handleIndex();
                 state.targetPointCountForActiveCluster =
                         state.clusters().get(selectedClusterIndex).size();
+                stuckMemberShrinkRequest = null;
                 draggingStartPoint = pointerWorld;
                 coMovingHandles = findColocatedHandles(
                         selectedClusterIndex, selectedMemberIndex, selectedHandleIndex);
@@ -378,6 +396,8 @@ public class AppMain implements Drawing {
             ignoreControlModifierForCamera = false;
         }
 
+        flushPendingErrorDialog(inputState);
+
         if (event.isKeyPress(KeyCode.S) && inputState.keyPressed(KeyCode.CONTROL)) {
             saveSceneToFile();
             return;
@@ -488,6 +508,7 @@ public class AppMain implements Drawing {
         selectedMemberIndex = memberIndex;
         selectedHandleIndex = HandleVisibility.primaryHandleIndex(cluster.members().get(memberIndex));
         state.targetPointCountForActiveCluster = cluster.size();
+        stuckMemberShrinkRequest = null;
     }
 
     /** Shift+n/p: select the first member of the next/previous cluster. */
@@ -528,6 +549,7 @@ public class AppMain implements Drawing {
         coMovingHandles = List.of();
         snapTargetPosition = null;
         memberCountWhileNoSelection = state.targetPointCountForActiveCluster;
+        stuckMemberShrinkRequest = null;
     }
 
     private void normalizeSelection() {
@@ -629,7 +651,31 @@ public class AppMain implements Drawing {
     }
 
     private void showSelectionRequired(String message) {
-        showErrorDialog("Selection required", message);
+        // Defer until keys are up so InputState sees the release before the Alert steals focus.
+        queueErrorDialogAfterKeysUp("Selection required", message);
+    }
+
+    private void queueErrorDialogAfterKeysUp(String header, String message) {
+        pendingErrorHeader = header;
+        pendingErrorMessage = message;
+    }
+
+    private void flushPendingErrorDialog(InputState inputState) {
+        if (pendingErrorMessage == null) {
+            return;
+        }
+        if (inputState.keyPressed(KeyCode.A)
+                || inputState.keyPressed(KeyCode.D)
+                || inputState.keyPressed(KeyCode.N)
+                || inputState.keyPressed(KeyCode.P)
+                || inputState.keyPressed(KeyCode.SHIFT)) {
+            return;
+        }
+        String header = pendingErrorHeader;
+        String message = pendingErrorMessage;
+        pendingErrorHeader = null;
+        pendingErrorMessage = null;
+        showErrorDialog(header, message);
     }
 
     private void normalizeClusterCountGadget() {
@@ -644,64 +690,100 @@ public class AppMain implements Drawing {
         }
         lastRejectedClusterCount = null;
 
-        while (state.clusterCount() > state.numberOfClusters) {
-            if (!hasSelection()) {
-                state.numberOfClusters = state.clusterCount();
-                if (!Integer.valueOf(requestedClusterCount).equals(lastRejectedClusterShrinkWithoutSelection)) {
-                    lastRejectedClusterShrinkWithoutSelection = requestedClusterCount;
-                    showSelectionRequired("Select a member first to delete its cluster.");
-                }
-                return;
-            }
-            int removeIdx = selectedClusterIndex;
-            if (!state.removeClusterAt(removeIdx)) {
-                state.numberOfClusters = state.clusterCount();
-                return;
-            }
-            clearSelection();
-            state.resetMemberCountGadgetSync();
-            if (state.clusterCount() > state.numberOfClusters) {
-                state.numberOfClusters = state.clusterCount();
-                showSelectionRequired("Select a member first to delete another cluster.");
-                return;
-            }
+        if (stuckClusterShrinkRequest != null && state.numberOfClusters > stuckClusterShrinkRequest) {
+            stuckClusterShrinkRequest = null;
         }
-        lastRejectedClusterShrinkWithoutSelection = null;
+
+        if (state.clusterCount() <= state.numberOfClusters) {
+            return;
+        }
+
+        // Unfinished lower gadget value: snap only — never dialog from draw.
+        if (stuckClusterShrinkRequest != null && state.numberOfClusters <= stuckClusterShrinkRequest) {
+            state.numberOfClusters = state.clusterCount();
+            return;
+        }
+
+        if (!hasSelection()) {
+            stuckClusterShrinkRequest = requestedClusterCount;
+            state.numberOfClusters = state.clusterCount();
+            return;
+        }
+
+        state.removeClusterAt(selectedClusterIndex);
+        clearSelection();
+        state.resetMemberCountGadgetSync();
+        if (requestedClusterCount < state.clusterCount()) {
+            stuckClusterShrinkRequest = requestedClusterCount;
+        } else {
+            stuckClusterShrinkRequest = null;
+        }
+        state.numberOfClusters = state.clusterCount();
     }
 
     private void normalizeSelectedClusterMemberCountGadget() {
         int requestedMemberCount = state.targetPointCountForActiveCluster;
         if (!hasSelection()) {
-            if (requestedMemberCount != memberCountWhileNoSelection) {
-                state.targetPointCountForActiveCluster = memberCountWhileNoSelection;
-                if (!Integer.valueOf(requestedMemberCount).equals(lastRejectedMemberCountWithoutSelection)) {
-                    lastRejectedMemberCountWithoutSelection = requestedMemberCount;
-                    showSelectionRequired("Select a member first to change the member count.");
-                }
-            }
+            state.targetPointCountForActiveCluster = memberCountWhileNoSelection;
             return;
         }
 
-        lastRejectedMemberCountWithoutSelection = null;
+        if (stuckMemberShrinkRequest != null && requestedMemberCount > stuckMemberShrinkRequest) {
+            stuckMemberShrinkRequest = null;
+        }
+
         int clusterIdx = selectedClusterIndex;
+        ClusterSite cluster = state.clusters().get(clusterIdx);
         String compatibilityError = state.ensureMemberCountForCluster(clusterIdx).orElse(null);
-        if (compatibilityError == null) {
-            lastRejectedMemberCount = null;
-            lastRejectedMemberCountClusterIndex = -1;
-            memberCountWhileNoSelection = state.targetPointCountForActiveCluster;
-            if (selectedMemberIndex >= state.clusters().get(clusterIdx).size()) {
-                selectMember(clusterIdx, state.clusters().get(clusterIdx).size() - 1);
+        if (compatibilityError != null) {
+            boolean repeatedRejectedRequest =
+                    clusterIdx == lastRejectedMemberCountClusterIndex
+                            && Integer.valueOf(requestedMemberCount).equals(lastRejectedMemberCount);
+            if (!repeatedRejectedRequest) {
+                lastRejectedMemberCountClusterIndex = clusterIdx;
+                lastRejectedMemberCount = requestedMemberCount;
+                showCompatibilityError(compatibilityError);
             }
             return;
         }
-        boolean repeatedRejectedRequest =
-                clusterIdx == lastRejectedMemberCountClusterIndex
-                        && Integer.valueOf(requestedMemberCount).equals(lastRejectedMemberCount);
-        if (!repeatedRejectedRequest) {
-            lastRejectedMemberCountClusterIndex = clusterIdx;
-            lastRejectedMemberCount = requestedMemberCount;
-            showCompatibilityError(compatibilityError);
+        lastRejectedMemberCount = null;
+        lastRejectedMemberCountClusterIndex = -1;
+
+        requestedMemberCount = state.targetPointCountForActiveCluster;
+        int liveCount = cluster.size();
+
+        if (liveCount <= requestedMemberCount) {
+            memberCountWhileNoSelection = requestedMemberCount;
+            return;
         }
+
+        // Unfinished lower gadget value: snap only — never dialog from draw.
+        if (stuckMemberShrinkRequest != null && requestedMemberCount <= stuckMemberShrinkRequest) {
+            state.targetPointCountForActiveCluster = liveCount;
+            memberCountWhileNoSelection = liveCount;
+            return;
+        }
+
+        // Cannot remove the last member of a cluster.
+        if (liveCount <= 1) {
+            stuckMemberShrinkRequest = requestedMemberCount;
+            state.targetPointCountForActiveCluster = liveCount;
+            memberCountWhileNoSelection = liveCount;
+            return;
+        }
+
+        int removeIdx = selectedMemberIndex;
+        cluster.removeMember(removeIdx);
+        int nextMember = Math.min(removeIdx, cluster.size() - 1);
+        selectMember(clusterIdx, nextMember);
+
+        if (requestedMemberCount < cluster.size()) {
+            stuckMemberShrinkRequest = requestedMemberCount;
+        } else {
+            stuckMemberShrinkRequest = null;
+        }
+        state.targetPointCountForActiveCluster = cluster.size();
+        memberCountWhileNoSelection = cluster.size();
     }
 
     private void clearRejectedGadgetAttempts() {
@@ -711,7 +793,8 @@ public class AppMain implements Drawing {
         lastRejectedMemberCount = null;
         lastRejectedMemberCountClusterIndex = -1;
         lastRejectedMemberCountWithoutSelection = null;
-        lastRejectedClusterShrinkWithoutSelection = null;
+        stuckClusterShrinkRequest = null;
+        stuckMemberShrinkRequest = null;
     }
 
     private void showErrorDialog(String header, String message) {
@@ -719,13 +802,12 @@ public class AppMain implements Drawing {
             String dialogKey = header + "\n" + message;
             if (activeErrorAlert != null && activeErrorAlert.isShowing()) {
                 if (dialogKey.equals(activeErrorDialogKey)) {
-                    focusActiveErrorAlert();
+                    // Already showing this message; do not re-focus every draw frame.
                     return;
                 }
                 activeErrorAlert.setHeaderText(header);
                 activeErrorAlert.setContentText(message);
                 activeErrorDialogKey = dialogKey;
-                focusActiveErrorAlert();
                 return;
             }
 
@@ -742,6 +824,8 @@ public class AppMain implements Drawing {
                     activeErrorAlert = null;
                     activeErrorDialogKey = null;
                 }
+                // Prefer the drawing canvas (where drawing-fx listens); window focus alone is not enough.
+                Platform.runLater(this::restoreDrawingCanvasFocus);
             });
             activeErrorAlert = alert;
             activeErrorDialogKey = dialogKey;
@@ -758,6 +842,27 @@ public class AppMain implements Drawing {
                 : activeErrorAlert.getDialogPane().getScene().getWindow();
         if (window != null) {
             window.requestFocus();
+        }
+    }
+
+    /** drawing-fx listens on DrawingCanvas; restore focus there after modal dialogs. */
+    private void restoreDrawingCanvasFocus() {
+        for (Window w : Window.getWindows()) {
+            if (!w.isShowing() || w.getScene() == null) {
+                continue;
+            }
+            Scene scene = w.getScene();
+            for (Node node : scene.getRoot().lookupAll("*")) {
+                if (node.getClass().getName().endsWith("DrawingCanvas")) {
+                    w.requestFocus();
+                    node.requestFocus();
+                    return;
+                }
+            }
+        }
+        Window fallback = firstShowingWindow();
+        if (fallback != null) {
+            fallback.requestFocus();
         }
     }
 
