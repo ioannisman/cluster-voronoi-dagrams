@@ -10,9 +10,15 @@ function post(msg: WorkerResponse): void {
   self.postMessage(msg);
 }
 
+function epochNow(): number {
+  return performance.timeOrigin + performance.now();
+}
+
 function cvdCore(): CvdCore {
   const core = (globalThis as typeof globalThis & { cvdCore?: CvdCore }).cvdCore;
   if (
+    !core?.computeFrame ||
+    !core.exportFrame ||
     !core?.renderFrame ||
     !core.moveHandle ||
     !core.beginHandleDrag ||
@@ -111,6 +117,7 @@ self.onmessage = (event: MessageEvent<WorkerRequest>) => {
       }
 
       if (msg.type === 'frame') {
+        const workerStart = performance.now();
         const core = cvdCore();
         if (msg.settings) {
           applySettings(core, msg.settings);
@@ -126,9 +133,18 @@ self.onmessage = (event: MessageEvent<WorkerRequest>) => {
             msg.move.coMove !== false
           );
         }
-        const t0 = performance.now();
-        const raw = core.renderFrame(msg.width, msg.height);
+
+        const classifyStart = performance.now();
+        core.computeFrame(msg.width, msg.height);
+        const classifyMs = performance.now() - classifyStart;
+
+        const exportStart = performance.now();
+        const raw = core.exportFrame();
+        const exportMs = performance.now() - exportStart;
+
+        const normalizeStart = performance.now();
         const frame = normalizeFrame(raw);
+        const normalizeMs = performance.now() - normalizeStart;
         // Stamp request settings so the UI can ignore stale frames when syncing controls.
         if (msg.settings?.worldView != null) {
           frame.worldView = { ...msg.settings.worldView };
@@ -136,8 +152,19 @@ self.onmessage = (event: MessageEvent<WorkerRequest>) => {
         if (msg.settings?.siteMemberKind != null) {
           frame.requestedSiteMemberKind = msg.settings.siteMemberKind;
         }
-        const ms = performance.now() - t0;
-        post({ type: 'frame', requestId: msg.requestId, ms, frame });
+        post({
+          type: 'frame',
+          requestId: msg.requestId,
+          requestedAtEpochMs: msg.requestedAtEpochMs,
+          postedAtEpochMs: epochNow(),
+          timings: {
+            classifyMs,
+            exportMs,
+            normalizeMs,
+            workerMs: performance.now() - workerStart,
+          },
+          frame,
+        });
       }
     } catch (err: unknown) {
       post({

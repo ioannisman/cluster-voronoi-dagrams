@@ -8,12 +8,20 @@ export type MoveHandleCmd = {
   coMove?: boolean;
 };
 
+export type WorkerStageTimings = {
+  classifyMs: number;
+  exportMs: number;
+  normalizeMs: number;
+  workerMs: number;
+};
+
 /** Main → worker */
 export type WorkerRequest =
   | { type: 'init'; teavmUrl: string }
   | {
       type: 'frame';
       requestId: number;
+      requestedAtEpochMs: number;
       width: number;
       height: number;
       move?: MoveHandleCmd;
@@ -24,5 +32,12 @@ export type WorkerRequest =
 /** Worker → main */
 export type WorkerResponse =
   | { type: 'ready' }
-  | { type: 'frame'; requestId: number; ms: number; frame: CvdFrame }
+  | {
+      type: 'frame';
+      requestId: number;
+      requestedAtEpochMs: number;
+      postedAtEpochMs: number;
+      timings: WorkerStageTimings;
+      frame: CvdFrame;
+    }
   | { type: 'error'; message: string; requestId?: number };

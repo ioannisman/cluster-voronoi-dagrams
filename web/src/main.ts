@@ -1,7 +1,8 @@
 import type { CvdAuthoringAction, CvdFrame, CvdSceneSettings } from './teavm.d.ts';
-import { ClassifyClient } from './classifyClient';
+import { ClassifyClient, type FrameDelivery } from './classifyClient';
 import type { MoveHandleCmd } from './workerMessages';
 import { drawMemberOverlays, handleIsVisible } from './memberOverlays';
+import { runBenchmark } from './benchmark';
 import {
   boundsOf,
   defaultWorldView,
@@ -79,6 +80,7 @@ if (!ctx) {
 
 let client: ClassifyClient | null = null;
 let latestFrame: CvdFrame | null = null;
+let latestDelivery: FrameDelivery | null = null;
 let draggingHandle: number | null = null;
 let panning = false;
 /**
@@ -91,7 +93,6 @@ let zoomIdleTimer: ReturnType<typeof setTimeout> | null = null;
 let lastPanPixel: { x: number; y: number } | null = null;
 /** Bitmap-pixel distance before an empty left-press becomes a pan. */
 const EMPTY_CLICK_PAN_THRESHOLD_PX = 5;
-let lastRenderMs = 0;
 let syncingControls = false;
 let worldView: WorldView = defaultWorldView();
 let snapIndicator: { x: number; y: number } | null = null;
@@ -103,6 +104,10 @@ let lastPointerPixel: { x: number; y: number } | null = null;
 function setStatus(text: string, isError = false): void {
   statusEl!.textContent = text;
   statusEl!.classList.toggle('error', isError);
+}
+
+function epochNow(): number {
+  return performance.timeOrigin + performance.now();
 }
 
 function handleRadiusPx(): number {
@@ -137,7 +142,6 @@ function displaySize(): { width: number; height: number } {
 
 function rasterSize(): { width: number; height: number } {
   const { width, height } = displaySize();
-  // Low-res while dragging (optional) or while the camera is moving — TeaVM is sequential.
   const usePreview =
     panning ||
     zooming ||
@@ -350,17 +354,49 @@ function syncControlsFromScene(frame: CvdFrame): void {
   syncingControls = false;
 }
 
-function paint(frame: CvdFrame, ms: number): void {
+function paint(delivery: FrameDelivery, repaint = false): void {
+  const { frame, timings } = delivery;
   latestFrame = frame;
-  lastRenderMs = ms;
+  if (!repaint) {
+    latestDelivery = delivery;
+  }
   syncControlsFromScene(frame);
 
   const { width: dw, height: dh } = displaySize();
   const scaleX = dw / frame.width;
   const scaleY = dh / frame.height;
 
+  let imageData: ImageData | null = null;
+  const argbStart = performance.now();
   if (toggleDiagram!.checked) {
-    const imageData = argbToImageData(frame.argb, frame.width, frame.height);
+    imageData = argbToImageData(frame.argb, frame.width, frame.height);
+  }
+  timings.argbMs = performance.now() - argbStart;
+
+  // Hide skeleton/subdivision while camera moves or during fast-preview drag.
+  // Keep members visible while dragging so the selected site (and others) stay visible as they move.
+  const cameraBusy = panning || zooming;
+  const frameMatchesView = worldBoundsMatch(frame.worldView, boundsOf(worldView));
+  const skipContourOverlays =
+    cameraBusy ||
+    !frameMatchesView ||
+    (draggingHandle !== null && toggleFastPreview!.checked);
+  const skipMembers =
+    cameraBusy || !frameMatchesView;
+
+  const contourStart = performance.now();
+  const skeletonSegments =
+    !skipContourOverlays && toggleSkeleton!.checked
+      ? extractSkeletonSegments(frame.owners, frame.width, frame.height)
+      : [];
+  const subdivisionSegments =
+    !skipContourOverlays && toggleSubdivision!.checked && frame.members
+      ? extractSubdivisionSegments(frame.owners, frame.members, frame.width, frame.height)
+      : [];
+  timings.contourMs = performance.now() - contourStart;
+
+  const paintStart = performance.now();
+  if (imageData) {
     if (frame.width === dw && frame.height === dh) {
       ctx!.putImageData(imageData, 0, 0);
     } else {
@@ -376,20 +412,9 @@ function paint(frame: CvdFrame, ms: number): void {
     ctx!.fillRect(0, 0, dw, dh);
   }
 
-  // Hide skeleton/subdivision while camera moves or during fast-preview drag.
-  // Keep members visible while dragging so the selected site (and others) stay visible as they move.
-  const cameraBusy = panning || zooming;
-  const frameMatchesView = worldBoundsMatch(frame.worldView, boundsOf(worldView));
-  const skipContourOverlays =
-    cameraBusy ||
-    !frameMatchesView ||
-    (draggingHandle !== null && toggleFastPreview!.checked);
-  const skipMembers =
-    cameraBusy || !frameMatchesView;
-
-  if (!skipContourOverlays && toggleSkeleton!.checked) {
+  if (skeletonSegments.length > 0) {
     strokeSegments(
-      extractSkeletonSegments(frame.owners, frame.width, frame.height),
+      skeletonSegments,
       scaleX,
       scaleY,
       'rgba(0, 0, 0, 0.8)',
@@ -397,9 +422,9 @@ function paint(frame: CvdFrame, ms: number): void {
     );
   }
 
-  if (!skipContourOverlays && toggleSubdivision!.checked && frame.members) {
+  if (subdivisionSegments.length > 0) {
     strokeSegments(
-      extractSubdivisionSegments(frame.owners, frame.members, frame.width, frame.height),
+      subdivisionSegments,
       scaleX,
       scaleY,
       'rgba(0, 0, 0, 0.4)',
@@ -420,14 +445,23 @@ function paint(frame: CvdFrame, ms: number): void {
     }
     drawSnapIndicator();
   }
+  timings.paintMs = performance.now() - paintStart;
+  if (!repaint) {
+    timings.totalMs = Math.max(0, epochNow() - delivery.requestedAtEpochMs);
+  }
 
-  const preview = draggingHandle !== null || frame.width !== dw;
   const base =
-    `${dw}×${dh}` +
+    `display ${dw}×${dh}` +
     (canvasPixelRatio > 1 ? ` @${canvasPixelRatio.toFixed(2)}x` : '') +
-    (preview ? ` (preview ${frame.width}×${frame.height})` : '') +
-    `, view ±${worldView.half.toFixed(0)} @ (${worldView.cx.toFixed(0)}, ${worldView.cy.toFixed(0)})` +
-    `, ${frame.scene.clusterCount} clusters (${ms.toFixed(1)} ms).`;
+    `, raster ${frame.width}×${frame.height}` +
+    `, classify ${timings.classifyMs.toFixed(1)} ms` +
+    `, export ${timings.exportMs.toFixed(1)} ms` +
+    `, transfer ${timings.responseMs.toFixed(1)} ms` +
+    `, RGBA ${timings.argbMs.toFixed(1)} ms` +
+    `, contour ${timings.contourMs.toFixed(1)} ms` +
+    `, paint ${timings.paintMs.toFixed(1)} ms` +
+    `, total ${timings.totalMs.toFixed(1)} ms` +
+    `, ${frame.scene.clusterCount} clusters.`;
   if (frame.scene.lastError) {
     setStatus(`${frame.scene.lastError} — ${base}`, true);
   } else {
@@ -513,8 +547,8 @@ function updateCursor(): void {
 }
 
 function repaintLatest(): void {
-  if (latestFrame) {
-    paint(latestFrame, lastRenderMs);
+  if (latestDelivery) {
+    paint(latestDelivery, true);
   }
 }
 
@@ -605,9 +639,10 @@ function onPointerMove(event: PointerEvent): void {
     const dy = y - pendingEmptyClick.y;
     const threshold = EMPTY_CLICK_PAN_THRESHOLD_PX * canvasPixelRatio;
     if (dx * dx + dy * dy >= threshold * threshold) {
-      beginPan(pendingEmptyClick.pointerId, pendingEmptyClick.x, pendingEmptyClick.y);
+      const press = pendingEmptyClick;
+      beginPan(press.pointerId, press.x, press.y);
       // Apply this move as the first pan delta from the press origin.
-      worldView = panByPixels(worldView, x - pendingEmptyClick.x, y - pendingEmptyClick.y, width, height);
+      worldView = panByPixels(worldView, x - press.x, y - press.y, width, height);
       lastPanPixel = { x, y };
       requestClassify({ settings: currentSettings() });
     }
@@ -763,32 +798,27 @@ function onKeyDown(event: KeyboardEvent): void {
   }
 
   const key = event.key.length === 1 ? event.key.toLowerCase() : event.key;
-  const repaintOnly = () => {
-    if (latestFrame) {
-      paint(latestFrame, lastRenderMs);
-    }
-  };
 
   switch (key) {
     case 'h':
       event.preventDefault();
-      setHelpVisible(helpOverlay!.hidden);
+      setHelpVisible(helpOverlay!.hasAttribute('hidden'));
       break;
     case 'c':
       event.preventDefault();
-      flipToggle(toggleDiagram!, repaintOnly);
+      flipToggle(toggleDiagram!, repaintLatest);
       break;
     case 'm':
       event.preventDefault();
-      flipToggle(toggleMembers!, repaintOnly);
+      flipToggle(toggleMembers!, repaintLatest);
       break;
     case 'k':
       event.preventDefault();
-      flipToggle(toggleSkeleton!, repaintOnly);
+      flipToggle(toggleSkeleton!, repaintLatest);
       break;
     case 'v':
       event.preventDefault();
-      flipToggle(toggleSubdivision!, repaintOnly);
+      flipToggle(toggleSubdivision!, repaintLatest);
       break;
     case 'f':
       event.preventDefault();
@@ -844,7 +874,7 @@ function galleryUrl(path: string): string {
   return new URL(`${base}scenes/gallery/${path}`, window.location.href).href;
 }
 
-async function populateExamplesDropdown(): Promise<void> {
+async function populateExamplesDropdown(): Promise<string[]> {
   const res = await fetch(galleryUrl('manifest.json'), { cache: 'no-store' });
   if (!res.ok) {
     throw new Error(`Failed to load gallery manifest (${res.status})`);
@@ -866,6 +896,7 @@ async function populateExamplesDropdown(): Promise<void> {
     opt.textContent = name;
     selectExample!.appendChild(opt);
   }
+  return files;
 }
 
 async function onExampleChange(): Promise<void> {
@@ -958,8 +989,8 @@ function wireControls(): void {
   });
 
   const repaintOnly = () => {
-    if (latestFrame) {
-      paint(latestFrame, lastRenderMs);
+    if (latestDelivery) {
+      repaintLatest();
     } else {
       requestClassify({ settings: currentSettings() });
     }
@@ -984,16 +1015,25 @@ async function main(): Promise<void> {
     setStatus(err.message, true);
   };
   await client.whenReady();
+  let galleryFiles: string[] = [];
   try {
-    await populateExamplesDropdown();
+    galleryFiles = await populateExamplesDropdown();
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : String(err);
     setStatus(message, true);
   }
 
   updateCursor();
-  wireControls();
   syncCanvasResolution();
+  if (new URLSearchParams(window.location.search).get('benchmark') === '1') {
+    await runBenchmark({
+      request: (request) => client!.enqueueAndWait(request),
+      sceneFiles: galleryFiles,
+      galleryUrl,
+      onProgress: (message) => setStatus(message),
+    });
+  }
+  wireControls();
   requestClassify({ settings: currentSettings() });
 }
 

@@ -88,6 +88,9 @@ export type CvdAuthoringAction =
   | { type: 'loadSceneJson'; json: string };
 
 export type CvdCore = {
+  computeFrame: (width: number, height: number) => void;
+  exportFrame: () => CvdFrame;
+  /** Convenience API retained for the standalone TeaVM smoke page. */
   renderFrame: (width: number, height: number) => CvdFrame;
   moveHandle: (index: number, worldX: number, worldY: number, coMove: boolean) => void;
   beginHandleDrag: (index: number) => void;

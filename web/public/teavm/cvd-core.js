@@ -1231,8 +1231,10 @@ cw_WebClassifyMain__clinit_ = () => {
     cw_WebClassifyMain_overlayCount = 0;
 },
 cw_WebClassifyMain_installApi$js_body$_72 = () => {
-    globalThis.cvdCore = { renderFrame : function(w, h) {
+    var computeFrame = function(w, h) {
         cw_WebClassifyMain_computeFrame$jsocb$_0(w, h);
+    };
+    var exportFrame = function() {
         var argb = cw_WebClassifyMain_lastArgb$jsocb$_1();
         var owners = cw_WebClassifyMain_lastOwners$jsocb$_2();
         var members = cw_WebClassifyMain_lastMembers$jsocb$_3();
@@ -1278,6 +1280,10 @@ cw_WebClassifyMain_installApi$js_body$_72 = () => {
         var es = cw_WebClassifyMain_ellipseStarts$jsocb$_40();
         return { argb : argb, owners : owners, members : members, width : width, height : height, handles : { x : hx, y : hy, cluster : hc, member : hm, within : hw, visible : hv, r : hr, g : hg, b : hb, n : hn }, overlays : { n : oc, kind : ok, cluster : ocl, member : om, ax : oax, ay : oay, bx : obx, by : oby, radius : orad, ellipseX : ex, ellipseY : ey, ellipseStarts : es }, scene : { metricKind : metric, neighborOrder : order, nearestNeighborK : k, shading : shading, lastError : err, clusterCount : clusterCount,
         activeClusterIndex : activeCluster, activeMemberCount : activeMembers, siteMemberKind : siteKind, selectedClusterIndex : selCluster, selectedMemberIndex : selMember, selectedHandleIndex : selHandle, clusterNames : names } };
+    };
+    globalThis.cvdCore = { computeFrame : computeFrame, exportFrame : exportFrame, renderFrame : function(w, h) {
+        computeFrame(w, h);
+        return exportFrame();
     }, moveHandle : function(index, worldX, worldY, coMove) {
         cw_WebClassifyMain_moveHandle$jsocb$_41(index, worldX, worldY, !!coMove);
     }, beginHandleDrag : function(index) {
