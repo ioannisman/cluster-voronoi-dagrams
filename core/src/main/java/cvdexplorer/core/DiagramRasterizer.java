@@ -8,6 +8,11 @@ import java.util.stream.IntStream;
 
 /** Pixel ownership grid and optional ARGB fill for a diagram raster. */
 public final class DiagramRasterizer {
+    public enum BufferSizing {
+        GROW_ONLY,
+        EXACT
+    }
+
     public record Classification(int clusterIndex, double score, int memberIndex) {
     }
 
@@ -39,6 +44,15 @@ public final class DiagramRasterizer {
     private int[] memberIndices;
     private int sizeYp = 0;
     private int sizeXp = 0;
+    private final BufferSizing bufferSizing;
+
+    public DiagramRasterizer() {
+        this(BufferSizing.GROW_ONLY);
+    }
+
+    public DiagramRasterizer(BufferSizing bufferSizing) {
+        this.bufferSizing = bufferSizing;
+    }
 
     /** Sequential row scan (no parallel streams). */
     public RasterResult render(
@@ -134,7 +148,9 @@ public final class DiagramRasterizer {
     }
 
     private void ensureBuffers(int sizeX, int sizeY) {
-        if ((sizeYp < sizeY) || (sizeXp < sizeX)) {
+        boolean exactSizeChanged = bufferSizing == BufferSizing.EXACT
+                && (pixels == null || pixels.length != sizeX * sizeY);
+        if (exactSizeChanged || (sizeYp < sizeY) || (sizeXp < sizeX)) {
             sizeYp = sizeY;
             sizeXp = sizeX;
             pixels = new int[sizeY * sizeX];

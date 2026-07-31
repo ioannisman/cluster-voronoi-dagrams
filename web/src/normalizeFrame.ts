@@ -14,6 +14,12 @@ function toInt32(source: ArrayLike<number> | null | undefined): Int32Array {
   return source instanceof Int32Array ? source : Int32Array.from(source as ArrayLike<number>);
 }
 
+function toOptionalInt32(
+  source: ArrayLike<number> | null | undefined
+): Int32Array | undefined {
+  return source == null ? undefined : toInt32(source);
+}
+
 function toBool01(source: ArrayLike<boolean | number> | null | undefined, length: number): Uint8Array {
   const out = new Uint8Array(length);
   if (source == null) {
@@ -94,9 +100,9 @@ export function normalizeFrame(frame: CvdFrame): CvdFrame {
   };
 
   return {
-    argb: toInt32(frame.argb),
-    owners: toInt32(frame.owners),
-    members: toInt32(frame.members),
+    argb: toOptionalInt32(frame.argb),
+    owners: toOptionalInt32(frame.owners),
+    members: toOptionalInt32(frame.members),
     width: frame.width,
     height: frame.height,
     handles,

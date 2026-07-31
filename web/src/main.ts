@@ -1,6 +1,6 @@
 import type { CvdAuthoringAction, CvdFrame, CvdSceneSettings } from './teavm.d.ts';
 import { ClassifyClient, type FrameDelivery } from './classifyClient';
-import type { MoveHandleCmd } from './workerMessages';
+import type { MoveHandleCmd, RasterOutputs } from './workerMessages';
 import { drawMemberOverlays, handleIsVisible } from './memberOverlays';
 import { runBenchmark } from './benchmark';
 import { selectRasterSize, type RasterQuality, type RasterSelection } from './rasterPolicy';
@@ -156,7 +156,21 @@ function rasterSize(): RasterSelection {
   });
 }
 
+function currentRasterOutputs(): RasterOutputs {
+  return {
+    argb: toggleDiagram!.checked,
+    owners: toggleSkeleton!.checked || toggleSubdivision!.checked,
+    members: toggleSubdivision!.checked,
+  };
+}
 
+function frameHasOutputs(frame: CvdFrame, outputs: RasterOutputs): boolean {
+  return (
+    (!outputs.argb || frame.argb != null) &&
+    (!outputs.owners || frame.owners != null) &&
+    (!outputs.members || frame.members != null)
+  );
+}
 
 function argbToImageData(argb: ArrayLike<number>, width: number, height: number): ImageData {
   const rgba = new Uint8ClampedArray(width * height * 4);
@@ -371,7 +385,7 @@ function paint(delivery: FrameDelivery, repaint = false): void {
 
   let imageData: ImageData | null = null;
   const argbStart = performance.now();
-  if (toggleDiagram!.checked) {
+  if (toggleDiagram!.checked && frame.argb) {
     imageData = argbToImageData(frame.argb, frame.width, frame.height);
   }
   timings.argbMs = performance.now() - argbStart;
@@ -389,11 +403,11 @@ function paint(delivery: FrameDelivery, repaint = false): void {
 
   const contourStart = performance.now();
   const skeletonSegments =
-    !skipContourOverlays && toggleSkeleton!.checked
+    !skipContourOverlays && toggleSkeleton!.checked && frame.owners
       ? extractSkeletonSegments(frame.owners, frame.width, frame.height)
       : [];
   const subdivisionSegments =
-    !skipContourOverlays && toggleSubdivision!.checked && frame.members
+    !skipContourOverlays && toggleSubdivision!.checked && frame.owners && frame.members
       ? extractSubdivisionSegments(frame.owners, frame.members, frame.width, frame.height)
       : [];
   timings.contourMs = performance.now() - contourStart;
@@ -492,13 +506,15 @@ function requestClassify(opts?: {
   if (!client) {
     return;
   }
-  const { width, height } = rasterSize();
+  const { width, height, preview } = rasterSize();
   const settings = opts?.settings
     ? { ...opts.settings, worldView: opts.settings.worldView ?? boundsOf(worldView) }
     : { worldView: boundsOf(worldView) };
   client.enqueue({
     width,
     height,
+    preview,
+    outputs: currentRasterOutputs(),
     move: opts?.move,
     settings,
     actions: opts?.actions,
@@ -555,14 +571,14 @@ function repaintLatest(): void {
   }
 }
 
-function repaintOnly(): void {
-  if (latestDelivery) {
+function repaintOrRequestOutputs(): void {
+  const outputs = currentRasterOutputs();
+  if (latestFrame && frameHasOutputs(latestFrame, outputs)) {
     repaintLatest();
   } else {
     requestClassify({ settings: currentSettings() });
   }
 }
-
 
 function markZooming(): void {
   const wasZooming = zooming;
@@ -818,19 +834,19 @@ function onKeyDown(event: KeyboardEvent): void {
       break;
     case 'c':
       event.preventDefault();
-      flipToggle(toggleDiagram!, repaintOnly);
+      flipToggle(toggleDiagram!, repaintOrRequestOutputs);
       break;
     case 'm':
       event.preventDefault();
-      flipToggle(toggleMembers!, repaintOnly);
+      flipToggle(toggleMembers!, repaintOrRequestOutputs);
       break;
     case 'k':
       event.preventDefault();
-      flipToggle(toggleSkeleton!, repaintOnly);
+      flipToggle(toggleSkeleton!, repaintOrRequestOutputs);
       break;
     case 'v':
       event.preventDefault();
-      flipToggle(toggleSubdivision!, repaintOnly);
+      flipToggle(toggleSubdivision!, repaintOrRequestOutputs);
       break;
     case 'f':
       event.preventDefault();
@@ -1003,10 +1019,17 @@ function wireControls(): void {
     }
   });
 
-  toggleDiagram!.addEventListener('change', repaintOnly);
-  toggleMembers!.addEventListener('change', repaintOnly);
-  toggleSkeleton!.addEventListener('change', repaintOnly);
-  toggleSubdivision!.addEventListener('change', repaintOnly);
+  const repaintOnly = () => {
+    if (latestDelivery) {
+      repaintLatest();
+    } else {
+      requestClassify({ settings: currentSettings() });
+    }
+  };
+  toggleDiagram!.addEventListener('change', repaintOrRequestOutputs);
+  toggleMembers!.addEventListener('change', repaintOrRequestOutputs);
+  toggleSkeleton!.addEventListener('change', repaintOrRequestOutputs);
+  toggleSubdivision!.addEventListener('change', repaintOrRequestOutputs);
   toggleFastPreview!.addEventListener('change', () => {
     if (draggingHandle !== null) {
       requestClassify({ settings: currentSettings() });

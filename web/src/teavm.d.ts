@@ -44,9 +44,9 @@ export type CvdSceneState = {
 };
 
 export type CvdFrame = {
-  argb: Int32Array | number[];
-  owners: Int32Array | number[];
-  members: Int32Array | number[];
+  argb?: Int32Array | number[];
+  owners?: Int32Array | number[];
+  members?: Int32Array | number[];
   width: number;
   height: number;
   handles: CvdHandles;
@@ -88,8 +88,8 @@ export type CvdAuthoringAction =
   | { type: 'loadSceneJson'; json: string };
 
 export type CvdCore = {
-  computeFrame: (width: number, height: number) => void;
-  exportFrame: () => CvdFrame;
+  computeFrame: (width: number, height: number, preview: boolean, outputMask: number) => void;
+  exportFrame: (outputMask: number) => CvdFrame;
   /** Convenience API retained for the standalone TeaVM smoke page. */
   renderFrame: (width: number, height: number) => CvdFrame;
   moveHandle: (index: number, worldX: number, worldY: number, coMove: boolean) => void;

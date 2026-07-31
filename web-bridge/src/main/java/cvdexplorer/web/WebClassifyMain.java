@@ -45,7 +45,16 @@ public final class WebClassifyMain {
     private static double worldMinY = DEFAULT_WORLD_MIN;
     private static double worldMaxY = DEFAULT_WORLD_MAX;
 
-    private static final DiagramRasterizer RASTERIZER = new DiagramRasterizer();
+    public static final int OUTPUT_ARGB = 1;
+    public static final int OUTPUT_OWNERS = 1 << 1;
+    public static final int OUTPUT_MEMBERS = 1 << 2;
+    public static final int OUTPUT_ALL = OUTPUT_ARGB | OUTPUT_OWNERS | OUTPUT_MEMBERS;
+    private static final int[] EMPTY_INTS = new int[0];
+
+    private static final DiagramRasterizer PREVIEW_RASTERIZER =
+            new DiagramRasterizer(DiagramRasterizer.BufferSizing.EXACT);
+    private static final DiagramRasterizer COMPLETED_RASTERIZER =
+            new DiagramRasterizer(DiagramRasterizer.BufferSizing.EXACT);
 
     /** Mutable live scene backing the web demo; point handles are dragged in place via {@link #moveHandle}. */
     private static SceneSnapshot sceneSnapshot = demoSnapshot();
@@ -62,9 +71,9 @@ public final class WebClassifyMain {
     private static final List<int[]> coMovingHandles = new ArrayList<>();
     private static int coMoveClusterIndex = -1;
 
-    private static int[] lastArgb = new int[0];
-    private static int[] lastOwners = new int[0];
-    private static int[] lastMembers = new int[0];
+    private static int[] lastArgb = EMPTY_INTS;
+    private static int[] lastOwners = EMPTY_INTS;
+    private static int[] lastMembers = EMPTY_INTS;
     private static int lastWidth = 0;
     private static int lastHeight = 0;
 
@@ -107,6 +116,10 @@ public final class WebClassifyMain {
      * Pixel (0,0) is top-left; world Y increases upward (canvas Y is flipped in the mapping).
      */
     public static void computeFrame(int width, int height) {
+        computeFrame(width, height, false, OUTPUT_ALL);
+    }
+
+    public static void computeFrame(int width, int height, boolean preview, int outputMask) {
         if (width < 1 || height < 1) {
             throw new IllegalArgumentException("width and height must be positive");
         }
@@ -116,14 +129,16 @@ public final class WebClassifyMain {
                 sceneSnapshot.neighborOrder(),
                 sceneSnapshot.nearestNeighborK()
         );
-        ClusterColorizer colorizer = new ClusterColorizer(
-                prepared.clusters(),
-                Rgba.gray(0.92),
-                shadingEnabled
-        );
+        boolean withArgb = (outputMask & OUTPUT_ARGB) != 0;
+        boolean withOwners = (outputMask & OUTPUT_OWNERS) != 0;
+        boolean withMembers = (outputMask & OUTPUT_MEMBERS) != 0;
+        ClusterColorizer colorizer = withArgb
+                ? new ClusterColorizer(prepared.clusters(), Rgba.gray(0.92), shadingEnabled)
+                : null;
         Box imageBox = Box.pq(Vector.ZERO, Vector.xy(width, height)).positive();
         Transformation tFromPixels = pixelToWorld(width, height);
-        DiagramRasterizer.RasterResult result = RASTERIZER.render(
+        DiagramRasterizer rasterizer = preview ? PREVIEW_RASTERIZER : COMPLETED_RASTERIZER;
+        DiagramRasterizer.RasterResult result = rasterizer.render(
                 tFromPixels,
                 imageBox,
                 point -> {
@@ -138,17 +153,17 @@ public final class WebClassifyMain {
                             ownership.memberIndex()
                     );
                 },
-                colorizer::color,
+                colorizer == null ? null : colorizer::color,
                 1.0
         );
-        if (result == null || result.argbPixels() == null) {
+        if (result == null || (withArgb && result.argbPixels() == null)) {
             throw new IllegalStateException("rasterizer returned null");
         }
         lastWidth = result.width();
         lastHeight = result.height();
-        lastArgb = result.argbPixels();
-        lastOwners = result.ownershipGrid().clusterIndices();
-        lastMembers = result.ownershipGrid().memberIndices();
+        lastArgb = withArgb ? result.argbPixels() : EMPTY_INTS;
+        lastOwners = withOwners ? result.ownershipGrid().clusterIndices() : EMPTY_INTS;
+        lastMembers = withMembers ? result.ownershipGrid().memberIndices() : EMPTY_INTS;
         computeHandles(prepared.clusters());
         computeOverlays(prepared.clusters());
     }
@@ -849,13 +864,16 @@ public final class WebClassifyMain {
     @JSBody(
             params = {},
             script = ""
-                    + "var computeFrame = function (w, h) {"
-                    + "  javaMethods.get('cvdexplorer.web.WebClassifyMain.computeFrame(II)V').invoke(w, h);"
+                    + "var computeFrame = function (w, h, preview, outputMask) {"
+                    + "  javaMethods.get('cvdexplorer.web.WebClassifyMain.computeFrame(IIZI)V').invoke(w, h, !!preview, outputMask);"
                     + "};"
-                    + "var exportFrame = function () {"
-                    + "    var argb = javaMethods.get('cvdexplorer.web.WebClassifyMain.lastArgb()[I').invoke();"
-                    + "    var owners = javaMethods.get('cvdexplorer.web.WebClassifyMain.lastOwners()[I').invoke();"
-                    + "    var members = javaMethods.get('cvdexplorer.web.WebClassifyMain.lastMembers()[I').invoke();"
+                    + "var exportFrame = function (outputMask) {"
+                    + "    var argb = (outputMask & 1) !== 0"
+                    + "      ? javaMethods.get('cvdexplorer.web.WebClassifyMain.lastArgb()[I').invoke() : undefined;"
+                    + "    var owners = (outputMask & 2) !== 0"
+                    + "      ? javaMethods.get('cvdexplorer.web.WebClassifyMain.lastOwners()[I').invoke() : undefined;"
+                    + "    var members = (outputMask & 4) !== 0"
+                    + "      ? javaMethods.get('cvdexplorer.web.WebClassifyMain.lastMembers()[I').invoke() : undefined;"
                     + "    var width = javaMethods.get('cvdexplorer.web.WebClassifyMain.lastWidth()I').invoke();"
                     + "    var height = javaMethods.get('cvdexplorer.web.WebClassifyMain.lastHeight()I').invoke();"
                     + "    var hx = javaMethods.get('cvdexplorer.web.WebClassifyMain.handleXs()[D').invoke();"
@@ -920,8 +938,8 @@ public final class WebClassifyMain {
                     + "  computeFrame: computeFrame,"
                     + "  exportFrame: exportFrame,"
                     + "  renderFrame: function (w, h) {"
-                    + "    computeFrame(w, h);"
-                    + "    return exportFrame();"
+                    + "    computeFrame(w, h, false, 7);"
+                    + "    return exportFrame(7);"
                     + "  },"
                     + "  moveHandle: function (index, worldX, worldY, coMove) {"
                     + "    javaMethods.get('cvdexplorer.web.WebClassifyMain.moveHandle(IDDZ)V').invoke(index, worldX, worldY, !!coMove);"

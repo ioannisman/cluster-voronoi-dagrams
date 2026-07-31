@@ -15,6 +15,22 @@ export type WorkerStageTimings = {
   workerMs: number;
 };
 
+export type RasterOutputs = {
+  argb: boolean;
+  owners: boolean;
+  members: boolean;
+};
+
+export const ALL_RASTER_OUTPUTS: RasterOutputs = {
+  argb: true,
+  owners: true,
+  members: true,
+};
+
+export function rasterOutputMask(outputs: RasterOutputs): number {
+  return (outputs.argb ? 1 : 0) | (outputs.owners ? 2 : 0) | (outputs.members ? 4 : 0);
+}
+
 /** Main → worker */
 export type WorkerRequest =
   | { type: 'init'; teavmUrl: string }
@@ -24,6 +40,8 @@ export type WorkerRequest =
       requestedAtEpochMs: number;
       width: number;
       height: number;
+      preview: boolean;
+      outputs: RasterOutputs;
       move?: MoveHandleCmd;
       settings?: CvdSceneSettings;
       actions?: CvdAuthoringAction[];

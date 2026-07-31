@@ -1,14 +1,18 @@
 import type { CvdAuthoringAction, CvdFrame, CvdSceneSettings } from './teavm.d.ts';
-import type {
-  MoveHandleCmd,
-  WorkerRequest,
-  WorkerResponse,
-  WorkerStageTimings,
+import {
+  ALL_RASTER_OUTPUTS,
+  type RasterOutputs,
+  type MoveHandleCmd,
+  type WorkerRequest,
+  type WorkerResponse,
+  type WorkerStageTimings,
 } from './workerMessages';
 
 export type FrameRequest = {
   width: number;
   height: number;
+  preview?: boolean;
+  outputs?: RasterOutputs;
   move?: MoveHandleCmd;
   settings?: CvdSceneSettings;
   actions?: CvdAuthoringAction[];
@@ -196,6 +200,8 @@ export class ClassifyClient {
         request: {
           width: req.width,
           height: req.height,
+          preview: req.preview ?? pendingRequest.preview,
+          outputs: req.outputs ?? pendingRequest.outputs,
           move: req.move ?? pendingRequest.move,
           settings: { ...pendingRequest.settings, ...req.settings },
           actions: [...(pendingRequest.actions ?? []), ...(req.actions ?? [])],
@@ -238,6 +244,8 @@ export class ClassifyClient {
       requestedAtEpochMs: pending.requestedAtEpochMs,
       width: req.width,
       height: req.height,
+      preview: req.preview ?? false,
+      outputs: req.outputs ?? ALL_RASTER_OUTPUTS,
       move: req.move,
       settings: req.settings,
       actions: req.actions,
