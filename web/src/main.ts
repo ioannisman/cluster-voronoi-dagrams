@@ -81,9 +81,16 @@ let client: ClassifyClient | null = null;
 let latestFrame: CvdFrame | null = null;
 let draggingHandle: number | null = null;
 let panning = false;
+/**
+ * Left-button press on empty canvas: wait for drag threshold before panning so a
+ * click (no drag) can clear selection instead.
+ */
+let pendingEmptyClick: { pointerId: number; x: number; y: number } | null = null;
 let zooming = false;
 let zoomIdleTimer: ReturnType<typeof setTimeout> | null = null;
 let lastPanPixel: { x: number; y: number } | null = null;
+/** Bitmap-pixel distance before an empty left-press becomes a pan. */
+const EMPTY_CLICK_PAN_THRESHOLD_PX = 5;
 let lastRenderMs = 0;
 let syncingControls = false;
 let worldView: WorldView = defaultWorldView();
@@ -537,18 +544,30 @@ function setHelpVisible(visible: boolean): void {
   }
 }
 
+function beginPan(pointerId: number, x: number, y: number): void {
+  pendingEmptyClick = null;
+  panning = true;
+  lastPanPixel = { x, y };
+  canvas!.setPointerCapture(pointerId);
+  updateCursor();
+  repaintLatest();
+}
+
 function onPointerDown(event: PointerEvent): void {
   const { x, y } = eventToBitmapPixel(event);
   const nearest = findNearestHandle(x, y);
   const middle = event.button === 1;
-  const wantPan = middle || (event.button === 0 && nearest === null && !togglePlaceMember!.checked);
 
-  if (wantPan) {
-    panning = true;
-    lastPanPixel = { x, y };
+  // Middle-click always pans immediately.
+  if (middle) {
+    beginPan(event.pointerId, x, y);
+    return;
+  }
+
+  // Empty left-press: defer pan until drag so a click clears selection.
+  if (event.button === 0 && nearest === null && !togglePlaceMember!.checked) {
+    pendingEmptyClick = { pointerId: event.pointerId, x, y };
     canvas!.setPointerCapture(event.pointerId);
-    updateCursor();
-    repaintLatest();
     return;
   }
 
@@ -581,6 +600,20 @@ function onPointerMove(event: PointerEvent): void {
   const { x, y } = eventToBitmapPixel(event);
   const { width, height } = displaySize();
 
+  if (pendingEmptyClick && event.pointerId === pendingEmptyClick.pointerId) {
+    const dx = x - pendingEmptyClick.x;
+    const dy = y - pendingEmptyClick.y;
+    const threshold = EMPTY_CLICK_PAN_THRESHOLD_PX * canvasPixelRatio;
+    if (dx * dx + dy * dy >= threshold * threshold) {
+      beginPan(pendingEmptyClick.pointerId, pendingEmptyClick.x, pendingEmptyClick.y);
+      // Apply this move as the first pan delta from the press origin.
+      worldView = panByPixels(worldView, x - pendingEmptyClick.x, y - pendingEmptyClick.y, width, height);
+      lastPanPixel = { x, y };
+      requestClassify({ settings: currentSettings() });
+    }
+    return;
+  }
+
   if (panning && lastPanPixel) {
     worldView = panByPixels(worldView, x - lastPanPixel.x, y - lastPanPixel.y, width, height);
     lastPanPixel = { x, y };
@@ -605,6 +638,18 @@ function onPointerMove(event: PointerEvent): void {
 }
 
 function onPointerUp(event: PointerEvent): void {
+  if (pendingEmptyClick && event.pointerId === pendingEmptyClick.pointerId) {
+    pendingEmptyClick = null;
+    if (canvas!.hasPointerCapture(event.pointerId)) {
+      canvas!.releasePointerCapture(event.pointerId);
+    }
+    requestClassify({
+      settings: currentSettings(),
+      actions: [{ type: 'clearSelection' }],
+    });
+    return;
+  }
+
   if (panning) {
     panning = false;
     lastPanPixel = null;
@@ -630,6 +675,18 @@ function onPointerUp(event: PointerEvent): void {
     settings: currentSettings(),
     actions: [{ type: 'endHandleDrag' }],
   });
+}
+
+/** Abort pending empty-click without clearing selection; otherwise same as pointerup. */
+function onPointerCancel(event: PointerEvent): void {
+  if (pendingEmptyClick && event.pointerId === pendingEmptyClick.pointerId) {
+    pendingEmptyClick = null;
+    if (canvas!.hasPointerCapture(event.pointerId)) {
+      canvas!.releasePointerCapture(event.pointerId);
+    }
+    return;
+  }
+  onPointerUp(event);
 }
 
 function onWheel(event: WheelEvent): void {
@@ -850,7 +907,7 @@ function wireControls(): void {
   canvas!.addEventListener('pointerdown', onPointerDown);
   canvas!.addEventListener('pointermove', onPointerMove);
   canvas!.addEventListener('pointerup', onPointerUp);
-  canvas!.addEventListener('pointercancel', onPointerUp);
+  canvas!.addEventListener('pointercancel', onPointerCancel);
   canvas!.addEventListener('wheel', onWheel, { passive: false });
   canvas!.addEventListener('contextmenu', (e) => e.preventDefault());
   canvas!.addEventListener('pointermove', (event) => {
