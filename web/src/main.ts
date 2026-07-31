@@ -3,6 +3,7 @@ import { ClassifyClient, type FrameDelivery } from './classifyClient';
 import type { MoveHandleCmd } from './workerMessages';
 import { drawMemberOverlays, handleIsVisible } from './memberOverlays';
 import { runBenchmark } from './benchmark';
+import { selectRasterSize, type RasterQuality, type RasterSelection } from './rasterPolicy';
 import {
   boundsOf,
   defaultWorldView,
@@ -18,8 +19,6 @@ import {
 
 const HANDLE_RADIUS_CSS = 6;
 const HIT_RADIUS_CSS = 10;
-/** Match desktop AppMain#DRAG_RASTER_SCALE while a handle is dragged. */
-const DRAG_RASTER_SCALE = 0.32;
 /** Cap backing-store edge length so TeaVM classify stays responsive. */
 const MAX_RASTER_EDGE = 1536;
 
@@ -30,6 +29,7 @@ const selectNeighbor = document.querySelector<HTMLSelectElement>('#select-neighb
 const inputK = document.querySelector<HTMLInputElement>('#input-k');
 const selectExample = document.querySelector<HTMLSelectElement>('#select-example');
 const selectSiteKind = document.querySelector<HTMLSelectElement>('#select-site-kind');
+const selectQuality = document.querySelector<HTMLSelectElement>('#select-quality');
 const btnAddMember = document.querySelector<HTMLButtonElement>('#btn-add-member');
 const btnRemoveMember = document.querySelector<HTMLButtonElement>('#btn-remove-member');
 const btnAddCluster = document.querySelector<HTMLButtonElement>('#btn-add-cluster');
@@ -54,6 +54,7 @@ if (
   !inputK ||
   !selectExample ||
   !selectSiteKind ||
+  !selectQuality ||
   !btnAddMember ||
   !btnRemoveMember ||
   !btnAddCluster ||
@@ -140,20 +141,22 @@ function displaySize(): { width: number; height: number } {
   return { width: canvas!.width, height: canvas!.height };
 }
 
-function rasterSize(): { width: number; height: number } {
+function rasterSize(): RasterSelection {
   const { width, height } = displaySize();
-  const usePreview =
+  const interactive =
     panning ||
     zooming ||
     (draggingHandle !== null && toggleFastPreview!.checked);
-  if (!usePreview) {
-    return { width, height };
-  }
-  return {
-    width: Math.max(1, Math.round(width * DRAG_RASTER_SCALE)),
-    height: Math.max(1, Math.round(height * DRAG_RASTER_SCALE)),
-  };
+  const quality: RasterQuality = selectQuality!.value === 'high' ? 'high' : 'balanced';
+  return selectRasterSize({
+    displayWidth: width,
+    displayHeight: height,
+    interactive,
+    quality,
+  });
 }
+
+
 
 function argbToImageData(argb: ArrayLike<number>, width: number, height: number): ImageData {
   const rgba = new Uint8ClampedArray(width * height * 4);
@@ -552,6 +555,15 @@ function repaintLatest(): void {
   }
 }
 
+function repaintOnly(): void {
+  if (latestDelivery) {
+    repaintLatest();
+  } else {
+    requestClassify({ settings: currentSettings() });
+  }
+}
+
+
 function markZooming(): void {
   const wasZooming = zooming;
   zooming = true;
@@ -806,19 +818,19 @@ function onKeyDown(event: KeyboardEvent): void {
       break;
     case 'c':
       event.preventDefault();
-      flipToggle(toggleDiagram!, repaintLatest);
+      flipToggle(toggleDiagram!, repaintOnly);
       break;
     case 'm':
       event.preventDefault();
-      flipToggle(toggleMembers!, repaintLatest);
+      flipToggle(toggleMembers!, repaintOnly);
       break;
     case 'k':
       event.preventDefault();
-      flipToggle(toggleSkeleton!, repaintLatest);
+      flipToggle(toggleSkeleton!, repaintOnly);
       break;
     case 'v':
       event.preventDefault();
-      flipToggle(toggleSubdivision!, repaintLatest);
+      flipToggle(toggleSubdivision!, repaintOnly);
       break;
     case 'f':
       event.preventDefault();
@@ -965,6 +977,9 @@ function wireControls(): void {
     void onExampleChange();
   });
   selectSiteKind!.addEventListener('change', onSceneControlChange);
+  selectQuality!.addEventListener('change', () => {
+    requestClassify({ settings: currentSettings() });
+  });
 
   btnAddMember!.addEventListener('click', () => addMemberAtPointerOrCenter());
   btnRemoveMember!.addEventListener('click', () => removeActiveMember());
@@ -988,17 +1003,17 @@ function wireControls(): void {
     }
   });
 
-  const repaintOnly = () => {
-    if (latestDelivery) {
-      repaintLatest();
-    } else {
-      requestClassify({ settings: currentSettings() });
-    }
-  };
   toggleDiagram!.addEventListener('change', repaintOnly);
   toggleMembers!.addEventListener('change', repaintOnly);
   toggleSkeleton!.addEventListener('change', repaintOnly);
   toggleSubdivision!.addEventListener('change', repaintOnly);
+  toggleFastPreview!.addEventListener('change', () => {
+    if (draggingHandle !== null) {
+      requestClassify({ settings: currentSettings() });
+    } else {
+      repaintOnly();
+    }
+  });
 }
 
 function teavmModuleUrl(): string {
