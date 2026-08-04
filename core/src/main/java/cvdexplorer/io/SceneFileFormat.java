@@ -21,7 +21,7 @@ import java.util.List;
 
 /**
  * Scene file DTOs and Gson-free mapping to {@link SceneSnapshot}.
- * Kept separate from {@link SceneJsonCodec} so TeaVM can load scenes without pulling Gson.
+ * Kept separate from {@link SceneJsonCodec}, which owns the Gson encode/decode layer.
  */
 public final class SceneFileFormat {
     public static final String CURRENT_VERSION = "1";

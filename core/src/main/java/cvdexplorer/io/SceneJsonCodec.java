@@ -4,7 +4,7 @@ import cvdexplorer.model.SceneSnapshot;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 
-/** Human-readable scene file encode/decode via Gson (JVM / desktop). Not for TeaVM. */
+/** Human-readable scene file encode/decode via Gson. */
 public final class SceneJsonCodec {
     public static final String CURRENT_VERSION = SceneFileFormat.CURRENT_VERSION;
 

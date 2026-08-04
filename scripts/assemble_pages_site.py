@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Build the GitHub Pages site tree: coverage/, other/, optional explorer/, dashboard + history."""
+"""Build the GitHub Pages site tree: coverage/, other/, dashboard + history."""
 
 from __future__ import annotations
 
@@ -29,11 +29,6 @@ def main() -> int:
     p.add_argument("--out-site", type=Path, required=True)
     p.add_argument("--sha", required=True)
     p.add_argument("--date", required=True, help="ISO-8601 timestamp")
-    p.add_argument(
-        "--explorer-dir",
-        type=Path,
-        help="Optional Vite build output (web/dist) copied to site/explorer/",
-    )
     args = p.parse_args()
 
     if not args.jacoco_xml.is_file():
@@ -84,12 +79,6 @@ def main() -> int:
     other_src = args.pages_src / "other"
     if other_src.is_dir():
         shutil.copytree(other_src, out / "other", dirs_exist_ok=True)
-
-    if args.explorer_dir is not None:
-        if not args.explorer_dir.is_dir():
-            print(f"Missing explorer dir: {args.explorer_dir}", file=sys.stderr)
-            return 1
-        shutil.copytree(args.explorer_dir, out / "explorer", dirs_exist_ok=True)
 
     shutil.copy2(args.pages_src / "index.html", out / "index.html")
     shutil.copy2(hist_path, out / "coverage-history.json")

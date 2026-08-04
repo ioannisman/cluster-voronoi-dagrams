@@ -6,7 +6,7 @@ import cvdexplorer.geometry.Vector;
 import java.util.List;
 
 /**
- * Default explorer scene shared by desktop reset/demo and the web TeaVM live scene.
+ * Default explorer scene used by desktop reset/demo.
  * Geometry matches {@code scenes/default_cvd.json}.
  */
 public final class DemoScenes {

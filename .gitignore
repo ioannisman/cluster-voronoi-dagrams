@@ -10,12 +10,5 @@ build/
 __pycache__/
 *.pyc
 
-# Web
-web/node_modules/
-web/dist/
-web/public/scenes/
-# TeaVM source maps embed absolute local paths; regenerate with generateJavaScript.
-web/public/teavm/*.map
-
 # Local construction scenes
 scenes/constructions/

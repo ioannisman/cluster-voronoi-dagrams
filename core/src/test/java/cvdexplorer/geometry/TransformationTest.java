@@ -13,7 +13,7 @@ class TransformationTest {
 
     @Test
     void scalingThenTranslationMatchesPixelToWorldOrder() {
-        // Mirrors WebClassifyMain.pixelToWorld composition.
+        // Scale then translate matches typical pixel-to-world composition.
         double sx = 2.0;
         double sy = -3.0;
         double tx = -100.0;

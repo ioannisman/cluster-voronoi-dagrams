@@ -9,7 +9,7 @@ import cvdexplorer.geometry.Vector;
  * the drawing-fx UI library ({@code xyz.marsavic.geometry.*}, which are bundled inside
  * {@code drawing-fx-*.jar}).
  * <p>
- * Domain, metrics, rasterization, and the web path must use {@code cvdexplorer.geometry} only.
+ * Domain, metrics, and rasterization must use {@code cvdexplorer.geometry} only.
  * Convert at drawing-fx call sites ({@link xyz.marsavic.drawingfx.drawing.View}, camera,
  * pointer events) with {@link #toDrawingFx} / {@link #fromDrawingFx}.
  * <p>

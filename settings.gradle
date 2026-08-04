@@ -6,4 +6,4 @@ pluginManagement {
 }
 
 rootProject.name = 'clusters-voronoi-diagrams'
-include 'core', 'desktop', 'web-bridge'
+include 'core', 'desktop'
