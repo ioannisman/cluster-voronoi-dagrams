@@ -32,6 +32,10 @@ public final class SceneState {
     @Properties(name = "New member type")
     public SiteMemberKind siteMemberKind = SiteMemberKind.POINT;
 
+    @GadgetInteger(min = SceneLimits.MIN_POLYGON_VERTICES, max = SceneLimits.MAX_POLYGON_VERTICES)
+    @Properties(name = "Member parameter")
+    public int memberParameter = SceneLimits.DEFAULT_MEMBER_PARAMETER;
+
     @GadgetEnum(enumClass = MetricKind.class)
     @Properties(name = "Metric")
     public MetricKind metricKind = MetricKind.MINIMUM_DISTANCE;
@@ -41,8 +45,8 @@ public final class SceneState {
     public NeighborOrder neighborOrder = NeighborOrder.NEAREST;
 
     @GadgetInteger(min = 1, max = MAX_MEMBERS_PER_CLUSTER)
-    @Properties(name = "Metric parameter k")
-    public int nearestNeighborK = 1;
+    @Properties(name = "Metric parameter")
+    public int metricParameter = 1;
 
     @GadgetBoolean
     @Properties(name = "Show colored regions (c)")
@@ -94,7 +98,8 @@ public final class SceneState {
                 snap.neighborOrder(),
                 snap.siteMemberKind(),
                 snap.clusters(),
-                snap.nearestNeighborK()
+                snap.metricParameter(),
+                snap.memberParameter()
         );
         state.targetPointCountForActiveCluster = state.clusters.get(0).size();
         state.lastMemberSyncClusterIndex = -1;
@@ -118,14 +123,26 @@ public final class SceneState {
         return clusters.stream().mapToInt(ClusterSite::size).min().orElse(0);
     }
 
-    /** Keeps {@link #nearestNeighborK} in {@code [1, min cluster size]} (and gadget max). */
-    public void clampNearestNeighborK() {
+    /** Keeps {@link #metricParameter} in {@code [1, min cluster size]} (and gadget max). */
+    public void clampMetricParameter() {
         int minSize = minMemberCountAcrossClusters();
         if (minSize < 1) {
-            nearestNeighborK = 1;
+            metricParameter = 1;
             return;
         }
-        nearestNeighborK = Math.max(1, Math.min(nearestNeighborK, Math.min(minSize, MAX_MEMBERS_PER_CLUSTER)));
+        metricParameter = Math.max(1, Math.min(metricParameter, Math.min(minSize, MAX_MEMBERS_PER_CLUSTER)));
+    }
+
+    /** Keeps {@link #memberParameter} in {@code [MIN_POLYGON_VERTICES, MAX_POLYGON_VERTICES]}. */
+    public void clampMemberParameter() {
+        memberParameter = clampedMemberParameter();
+    }
+
+    private int clampedMemberParameter() {
+        return Math.max(
+                SceneLimits.MIN_POLYGON_VERTICES,
+                Math.min(SceneLimits.MAX_POLYGON_VERTICES, memberParameter)
+        );
     }
 
     /** Authoring fields + clusters for JSON (no UI gadgets / view toggles). */
@@ -134,7 +151,8 @@ public final class SceneState {
         snapshot.setMetricKind(metricKind);
         snapshot.setNeighborOrder(neighborOrder);
         snapshot.setSiteMemberKind(siteMemberKind);
-        snapshot.setNearestNeighborK(nearestNeighborK);
+        snapshot.setMetricParameter(metricParameter);
+        snapshot.setMemberParameter(clampedMemberParameter());
         snapshot.setClusters(clusters);
         return snapshot;
     }
@@ -148,7 +166,8 @@ public final class SceneState {
             NeighborOrder newNeighborOrder,
             SiteMemberKind newSiteMemberKind,
             List<ClusterSite> newClusters,
-            int loadedNearestNeighborK
+            int loadedMetricParameter,
+            int loadedMemberParameter
     ) {
         if (newClusters.isEmpty() || newClusters.size() > MAX_CLUSTERS) {
             throw new IllegalArgumentException("Cluster list must be non-empty and at most " + MAX_CLUSTERS);
@@ -156,7 +175,8 @@ public final class SceneState {
         metricKind = newMetricKind;
         neighborOrder = newNeighborOrder;
         siteMemberKind = newSiteMemberKind;
-        nearestNeighborK = loadedNearestNeighborK;
+        metricParameter = loadedMetricParameter;
+        memberParameter = loadedMemberParameter;
         clusters.clear();
         for (ClusterSite site : newClusters) {
             clusters.add(site);
@@ -164,13 +184,15 @@ public final class SceneState {
         numberOfClusters = clusters.size();
         targetPointCountForActiveCluster = clusters.get(0).size();
         lastMemberSyncClusterIndex = -1;
-        clampNearestNeighborK();
+        clampMetricParameter();
+        clampMemberParameter();
     }
 
     public void copyFrom(SceneState other) {
         metricKind = other.metricKind;
         neighborOrder = other.neighborOrder;
-        nearestNeighborK = other.nearestNeighborK;
+        metricParameter = other.metricParameter;
+        memberParameter = other.memberParameter;
         galleryExample = other.galleryExample;
         showDiagram = other.showDiagram;
         showRegionSubdivision = other.showRegionSubdivision;
@@ -260,7 +282,13 @@ public final class SceneState {
                 return invalidNewMember;
             }
             Vector hint = jitteredNewMemberHint(cluster, clusterIndex, cluster.size());
-            cluster.addMember(SiteMemberFactory.createDefault(siteMemberKind, clusterIndex, cluster.size(), hint));
+            cluster.addMember(SiteMemberFactory.createDefault(
+                    siteMemberKind,
+                    clusterIndex,
+                    cluster.size(),
+                    hint,
+                    clampedMemberParameter()
+            ));
         }
         return Optional.empty();
     }
@@ -303,7 +331,13 @@ public final class SceneState {
         double x = -280 + (index % 5) * 140;
         double y = -200 + (index / 5) * 140;
         Vector center = Vector.xy(x, y);
-        ClusterMember first = SiteMemberFactory.createDefault(siteMemberKind, index, 0, center);
+        ClusterMember first = SiteMemberFactory.createDefault(
+                siteMemberKind,
+                index,
+                0,
+                center,
+                clampedMemberParameter()
+        );
         return new ClusterSite(
                 ClusterNaming.forNewCluster(index),
                 color,

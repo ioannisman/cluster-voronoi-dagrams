@@ -24,7 +24,7 @@ class SceneFileIoTest {
         source.metricKind = MetricKind.MAXIMUM_DISTANCE;
         source.neighborOrder = NeighborOrder.NEAREST;
         source.siteMemberKind = SiteMemberKind.POINT;
-        source.nearestNeighborK = 2;
+        source.metricParameter = 2;
         source.clusters().clear();
         source.clusters().add(new ClusterSite(
                 "Only",
@@ -49,7 +49,7 @@ class SceneFileIoTest {
             assertEquals(MetricKind.MAXIMUM_DISTANCE, loaded.metricKind);
             assertEquals(NeighborOrder.NEAREST, loaded.neighborOrder);
             assertEquals(SiteMemberKind.POINT, loaded.siteMemberKind);
-            assertEquals(2, loaded.nearestNeighborK);
+            assertEquals(2, loaded.metricParameter);
             assertEquals(1, loaded.clusters().size());
             assertEquals("Only", loaded.clusters().get(0).name());
             assertEquals(2, loaded.clusters().get(0).members().size());

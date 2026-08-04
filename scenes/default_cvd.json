@@ -3,7 +3,7 @@
   "metricKind": "MINIMUM_DISTANCE",
   "neighborOrder": "NEAREST",
   "siteMemberKind": "POINT",
-  "nearestNeighborK": 1,
+  "metricParameter": 1,
   "clusters": [
     {
       "name": "Amber",
@@ -24,6 +24,11 @@
           "cx": -51.5,
           "cy": -279.0,
           "radius": 115.77672477661476
+        },
+        {
+          "kind": "POLYGON",
+          "xs": [-240.0, -370.0, -320.0],
+          "ys": [160.0, 190.0, 290.0]
         }
       ]
     },

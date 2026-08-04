@@ -18,7 +18,8 @@ public final class DemoScenes {
         snapshot.setMetricKind(MetricKind.MINIMUM_DISTANCE);
         snapshot.setNeighborOrder(NeighborOrder.NEAREST);
         snapshot.setSiteMemberKind(SiteMemberKind.POINT);
-        snapshot.setNearestNeighborK(1);
+        snapshot.setMetricParameter(1);
+        snapshot.setMemberParameter(SceneLimits.DEFAULT_MEMBER_PARAMETER);
         snapshot.setClusters(defaultClusters());
         return snapshot;
     }
@@ -30,7 +31,12 @@ public final class DemoScenes {
                         new Rgba(1.0, 0.625, 0.25, 1.0),
                         List.of(
                                 new PointMember(Vector.xy(-154.5, 98.0)),
-                                circle(-51.5, -279.0, 115.77672477661476)
+                                circle(-51.5, -279.0, 115.77672477661476),
+                                new PolygonMember(List.of(
+                                        Vector.xy(-240.0, 160.0),
+                                        Vector.xy(-370.0, 190.0),
+                                        Vector.xy(-320.0, 290.0)
+                                ))
                         )
                 ),
                 new ClusterSite(

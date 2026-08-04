@@ -14,7 +14,7 @@ The `Neighbor order` can be selected between `NEAREST` and `FARTHEST`. **Nearest
 |:---:|:---:|
 | ![singletons max](figures/instances/singletons_max.png) | ![arbitrary max](figures/instances/arbitrary_max.png) |
 
-The `Member type` is the type of geometry that members in a cluster have. They can be of type `POINT`, `LINE_SEGMENT`, `CIRCLE`, `ELLIPSE`, or `LINE`. Polygons can also be created using line segments.
+The `Member type` is the type of geometry that members in a cluster have. They can be of type `POINT`, `LINE_SEGMENT`, `CIRCLE`, `ELLIPSE`, `LINE`, or `POLYGON`.
 
 
 The `Metric` defines how a distance between a point in the plane and a site is measured. Each site is a cluster of members; the metric turns that into a single distance for the cluster (for example, the distance to the nearest or farthest member). Available metrics are `MINIMUM_DISTANCE`, `MAXIMUM_DISTANCE`, `SUM_OF_DISTANCES`, `MEAN_DISTANCE`, and `KTH_NEAREST_DISTANCE`.

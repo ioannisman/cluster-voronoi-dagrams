@@ -2,9 +2,9 @@
 
 [← Documentation home](README.md)
 
-Members in a cluster can be `POINT`, `LINE_SEGMENT`, `CIRCLE`, `ELLIPSE`, or `LINE`.
+Members in a cluster can be `POINT`, `LINE_SEGMENT`, `CIRCLE`, `ELLIPSE`, `LINE`, or `POLYGON`.
 
-**Polygons** and open polygonal chains are not a separate member kind: build them from `LINE_SEGMENT` members and use **`Snap to handles`** in the app to align segment endpoints into closed or chained shapes.
+Open polygonal chains can still be built from `LINE_SEGMENT` members; use **`Snap to handles`** to weld segment endpoints if needed. Closed polygons should use the `POLYGON` member type.
 
 ## Points
 
@@ -32,9 +32,11 @@ Figures where each cluster uses **line segment** members (`LINE_SEGMENT`) follow
 
 ## Polygons
 
-The distance to each edge is the same as for a line segment (closest point on that segment). Clusters are closed polygons built from `LINE_SEGMENT` members.
+A `POLYGON` member is a closed vertex list. The distance from a query point to the member is the Euclidean distance to the **closest point on the boundary** (minimum over edges of the usual segment distance)—the same “distance to the object” model as for circles and ellipses.
 
-Figures where each cluster is a polygon follow.
+In the app, set **New member type** to `POLYGON` and **Member parameter** to choose how many vertices the *next* created polygon has (creation-time only).
+
+Figures where each cluster uses **polygon** members (`POLYGON`) follow.
 
 ### Minimum distance
 

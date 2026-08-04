@@ -24,6 +24,8 @@ public final class HelpOverlay {
                 "    n / p           - Next / previous member in selected cluster",
                 "    Shift+n / Shift+p - Select first member of next / previous cluster",
                 "    a               - Add member (type from gadget) at pointer to selected cluster",
+                "    Member parameter (gadget) - Creation parameter for new members (e.g. POLYGON vertex count)",
+                "    Metric parameter (gadget) - Parameter for metrics that need one (e.g. k-th nearest)",
                 "    d               - Remove selected member (prompts if nothing selected; count gadget snaps silently)",
                 "    Shift+a         - Add cluster",
                 "    Shift+d         - Remove selected member's cluster (prompts if nothing selected; count gadget snaps silently)",

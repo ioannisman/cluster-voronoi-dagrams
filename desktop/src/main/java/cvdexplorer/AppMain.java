@@ -118,7 +118,7 @@ public class AppMain implements Drawing {
         normalizeSiteMemberKindSelection();
         normalizeClusterCountGadget();
         normalizeSelectedClusterMemberCountGadget();
-        state.clampNearestNeighborK();
+        state.clampMetricParameter();
         applyGalleryExampleSelection();
 
         normalizeSelection();
@@ -132,7 +132,7 @@ public class AppMain implements Drawing {
                 state.clusters(),
                 state.metricKind,
                 state.neighborOrder,
-                state.nearestNeighborK
+                state.metricParameter
         );
         if (state.showDiagram || state.showSkeleton) {
             drawDiagram(view, preparedScene);
@@ -340,7 +340,13 @@ public class AppMain implements Drawing {
             }
             int clusterIdx = selectedClusterIndex;
             ClusterSite cluster = state.clusters().get(clusterIdx);
-            cluster.addMember(SiteMemberFactory.createDefault(state.siteMemberKind, clusterIdx, cluster.size(), pointerWorld));
+            cluster.addMember(SiteMemberFactory.createDefault(
+                    state.siteMemberKind,
+                    clusterIdx,
+                    cluster.size(),
+                    pointerWorld,
+                    state.memberParameter
+            ));
             state.targetPointCountForActiveCluster = cluster.size();
             selectMember(clusterIdx, cluster.size() - 1);
         }
@@ -882,7 +888,8 @@ public class AppMain implements Drawing {
                     snapshot.neighborOrder(),
                     snapshot.siteMemberKind(),
                     snapshot.clusters(),
-                    snapshot.nearestNeighborK()
+                    snapshot.metricParameter(),
+                    snapshot.memberParameter()
             );
             lastValidMetricKind = state.metricKind;
             lastValidSiteMemberKind = state.siteMemberKind;
@@ -898,7 +905,7 @@ public class AppMain implements Drawing {
     }
 
     private void saveSceneToFile() {
-        // JSON schema: see SceneJsonCodec (version "1", clusters, metricKind, neighborOrder, siteMemberKind, nearestNeighborK).
+        // JSON schema: see SceneJsonCodec (version "1", clusters, metricKind, neighborOrder, siteMemberKind, metricParameter).
         FileChooser chooser = new FileChooser();
         chooser.setTitle("Save scene");
         chooser.getExtensionFilters().add(new FileChooser.ExtensionFilter("JSON scene", "*.json"));

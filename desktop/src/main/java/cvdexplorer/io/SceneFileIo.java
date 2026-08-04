@@ -25,7 +25,8 @@ public final class SceneFileIo {
                 snapshot.neighborOrder(),
                 snapshot.siteMemberKind(),
                 snapshot.clusters(),
-                snapshot.nearestNeighborK()
+                snapshot.metricParameter(),
+                snapshot.memberParameter()
         );
     }
 }

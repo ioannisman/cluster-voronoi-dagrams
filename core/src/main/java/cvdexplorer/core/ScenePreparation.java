@@ -27,11 +27,11 @@ public final class ScenePreparation {
             List<ClusterSite> clusters,
             MetricKind metricKind,
             NeighborOrder neighborOrder,
-            int nearestNeighborK
+            int metricParameter
     ) {
         return new PreparedScene(
                 List.copyOf(clusters),
-                metricFor(clusters, metricKind, nearestNeighborK),
+                metricFor(clusters, metricKind, metricParameter),
                 ownershipSelectorFor(neighborOrder)
         );
     }
@@ -39,7 +39,7 @@ public final class ScenePreparation {
     private static ClusterMetric metricFor(
             List<ClusterSite> clusters,
             MetricKind metricKind,
-            int nearestNeighborK
+            int metricParameter
     ) {
         return switch (metricKind) {
             case MINIMUM_DISTANCE -> MINIMUM_DISTANCE;
@@ -48,7 +48,7 @@ public final class ScenePreparation {
             case MEAN_DISTANCE -> MEAN_DISTANCE;
             case KTH_NEAREST_DISTANCE -> {
                 int minSize = clusters.stream().mapToInt(ClusterSite::size).min().orElse(0);
-                int k = minSize < 1 ? 1 : Math.max(1, Math.min(nearestNeighborK, minSize));
+                int k = minSize < 1 ? 1 : Math.max(1, Math.min(metricParameter, minSize));
                 yield new KthNearestPointDistanceMetric(k);
             }
         };

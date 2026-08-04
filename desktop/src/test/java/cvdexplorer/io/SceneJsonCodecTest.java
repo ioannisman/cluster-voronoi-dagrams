@@ -7,6 +7,7 @@ import cvdexplorer.model.EllipseMember;
 import cvdexplorer.model.LineMember;
 import cvdexplorer.model.NeighborOrder;
 import cvdexplorer.model.PointMember;
+import cvdexplorer.model.PolygonMember;
 import cvdexplorer.model.Rgba;
 import cvdexplorer.model.SceneSnapshot;
 import cvdexplorer.model.SceneState;
@@ -30,6 +31,7 @@ class SceneJsonCodecTest {
         source.setMetricKind(MetricKind.MINIMUM_DISTANCE);
         source.setNeighborOrder(NeighborOrder.FARTHEST);
         source.setSiteMemberKind(SiteMemberKind.LINE);
+        source.setMemberParameter(5);
         source.setName("Round-trip example");
         source.setClusters(List.of(
                 new ClusterSite(
@@ -44,7 +46,12 @@ class SceneJsonCodecTest {
                                         Vector.xy(-20, 0),
                                         Vector.xy(20, 0),
                                         Vector.xy(0, 15)
-                                )
+                                ),
+                                new PolygonMember(List.of(
+                                        Vector.xy(0, 0),
+                                        Vector.xy(4, 0),
+                                        Vector.xy(2, 3)
+                                ))
                         )
                 ),
                 new ClusterSite(
@@ -70,18 +77,20 @@ class SceneJsonCodecTest {
                 parsed.neighborOrder(),
                 parsed.siteMemberKind(),
                 parsed.clusters(),
-                parsed.nearestNeighborK()
+                parsed.metricParameter(),
+                parsed.memberParameter()
         );
 
         assertEquals(MetricKind.MINIMUM_DISTANCE, restored.metricKind);
         assertEquals(NeighborOrder.FARTHEST, restored.neighborOrder);
         assertEquals(SiteMemberKind.LINE, restored.siteMemberKind);
-        assertEquals(source.nearestNeighborK(), restored.nearestNeighborK);
+        assertEquals(source.metricParameter(), restored.metricParameter);
+        assertEquals(5, restored.memberParameter);
         assertEquals(2, restored.clusters().size());
 
         ClusterSite a = restored.clusters().get(0);
         assertEquals("Alpha", a.name());
-        assertEquals(5, a.members().size());
+        assertEquals(6, a.members().size());
         PointMember p = (PointMember) a.members().get(0);
         assertEquals(10.0, p.position().x(), 1e-9);
         assertEquals(-20.0, p.position().y(), 1e-9);
@@ -97,6 +106,9 @@ class SceneJsonCodecTest {
         EllipseMember e = assertInstanceOf(EllipseMember.class, a.members().get(4));
         assertEquals(-20.0, e.focusA().x(), 1e-9);
         assertEquals(20.0, e.focusB().x(), 1e-9);
+        PolygonMember poly = assertInstanceOf(PolygonMember.class, a.members().get(5));
+        assertEquals(3, poly.handleCount());
+        assertEquals(3.0, poly.getHandle(2).y(), 1e-9);
         assertEquals(0.0, e.controlHandle().x(), 1e-9);
         assertEquals(15.0, e.controlHandle().y(), 1e-9);
 
@@ -224,18 +236,19 @@ class SceneJsonCodecTest {
                 parsed.neighborOrder(),
                 parsed.siteMemberKind(),
                 parsed.clusters(),
-                parsed.nearestNeighborK()
+                parsed.metricParameter(),
+                parsed.memberParameter()
         );
         assertEquals(MetricKind.MEAN_DISTANCE, state.metricKind);
     }
 
     @Test
-    void encodeDecodeRoundTripPreservesNearestNeighborK() throws Exception {
+    void encodeDecodeRoundTripPreservesMetricParameter() throws Exception {
         SceneSnapshot source = new SceneSnapshot();
         source.setMetricKind(MetricKind.KTH_NEAREST_DISTANCE);
         source.setNeighborOrder(NeighborOrder.FARTHEST);
         source.setSiteMemberKind(SiteMemberKind.POINT);
-        source.setNearestNeighborK(2);
+        source.setMetricParameter(2);
         source.setClusters(List.of(
                 new ClusterSite(
                         "A",
@@ -257,12 +270,13 @@ class SceneJsonCodecTest {
                 parsed.neighborOrder(),
                 parsed.siteMemberKind(),
                 parsed.clusters(),
-                parsed.nearestNeighborK()
+                parsed.metricParameter(),
+                parsed.memberParameter()
         );
 
         assertEquals(MetricKind.KTH_NEAREST_DISTANCE, restored.metricKind);
         assertEquals(NeighborOrder.FARTHEST, restored.neighborOrder);
-        assertEquals(2, restored.nearestNeighborK);
+        assertEquals(2, restored.metricParameter);
     }
 
     @Test
@@ -289,19 +303,20 @@ class SceneJsonCodecTest {
                 parsed.neighborOrder(),
                 parsed.siteMemberKind(),
                 parsed.clusters(),
-                parsed.nearestNeighborK()
+                parsed.metricParameter(),
+                parsed.memberParameter()
         );
         assertEquals(NeighborOrder.NEAREST, state.neighborOrder);
     }
 
     @Test
-    void rejectsInvalidNearestNeighborK() {
+    void rejectsInvalidMetricParameter() {
         String json = """
                 {
                   "version": "1",
                   "metricKind": "MINIMUM_DISTANCE",
                   "siteMemberKind": "POINT",
-                  "nearestNeighborK": 0,
+                  "metricParameter": 0,
                   "clusters": [
                     {
                       "name": "Alpha",
@@ -312,6 +327,6 @@ class SceneJsonCodecTest {
                 }
                 """;
         SceneJsonException ex = assertThrows(SceneJsonException.class, () -> SceneJsonCodec.parse(json));
-        assertTrue(ex.getMessage().contains("nearestNeighborK"));
+        assertTrue(ex.getMessage().contains("metricParameter"));
     }
 }

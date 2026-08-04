@@ -38,16 +38,16 @@ class SceneStateTest {
     }
 
     @Test
-    void clampNearestNeighborKSetsOneWhenNoMembers() {
+    void clampMetricParameterSetsOneWhenNoMembers() {
         SceneState state = new SceneState();
         state.clusters().clear();
-        state.nearestNeighborK = 5;
-        state.clampNearestNeighborK();
-        assertEquals(1, state.nearestNeighborK);
+        state.metricParameter = 5;
+        state.clampMetricParameter();
+        assertEquals(1, state.metricParameter);
     }
 
     @Test
-    void clampNearestNeighborKRespectsSmallestClusterSize() {
+    void clampMetricParameterRespectsSmallestClusterSize() {
         SceneState state = new SceneState();
         state.clusters().clear();
         state.clusters().add(new ClusterSite("A", Rgba.RED, List.of(
@@ -59,9 +59,9 @@ class SceneStateTest {
                 new PointMember(Vector.xy(0, 1)),
                 new PointMember(Vector.xy(1, 1))
         )));
-        state.nearestNeighborK = 100;
-        state.clampNearestNeighborK();
-        assertEquals(2, state.nearestNeighborK);
+        state.metricParameter = 100;
+        state.clampMetricParameter();
+        assertEquals(2, state.metricParameter);
     }
 
     @Test
@@ -82,10 +82,11 @@ class SceneStateTest {
                 NeighborOrder.NEAREST,
                 SiteMemberKind.POINT,
                 incoming,
-                99
+                99,
+                3
         );
         assertEquals(2, state.clusterCount());
-        assertEquals(1, state.nearestNeighborK);
+        assertEquals(1, state.metricParameter);
         assertEquals(2, state.targetPointCountForActiveCluster);
     }
 
@@ -98,7 +99,8 @@ class SceneStateTest {
                         NeighborOrder.NEAREST,
                         SiteMemberKind.POINT,
                         List.of(),
-                        1
+                        1,
+                3
                 )
         );
         List<ClusterSite> tooMany = new java.util.ArrayList<>();
@@ -111,7 +113,8 @@ class SceneStateTest {
                         NeighborOrder.NEAREST,
                         SiteMemberKind.POINT,
                         tooMany,
-                        1
+                        1,
+                3
                 )
         );
     }
@@ -178,7 +181,8 @@ class SceneStateTest {
                 NeighborOrder.NEAREST,
                 SiteMemberKind.CIRCLE,
                 loaded,
-                1
+                1,
+                3
         );
         state.targetPointCountForActiveCluster = 2;
 

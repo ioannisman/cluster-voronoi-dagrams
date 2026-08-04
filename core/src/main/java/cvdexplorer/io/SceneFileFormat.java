@@ -10,6 +10,7 @@ import cvdexplorer.model.EllipseMember;
 import cvdexplorer.model.LineMember;
 import cvdexplorer.model.NeighborOrder;
 import cvdexplorer.model.PointMember;
+import cvdexplorer.model.PolygonMember;
 import cvdexplorer.model.Rgba;
 import cvdexplorer.model.SceneLimits;
 import cvdexplorer.model.SceneSnapshot;
@@ -78,14 +79,28 @@ public final class SceneFileFormat {
             throw new SceneJsonException(invalidMetricMessage);
         }
 
-        int loadedNearestNeighborK = 1;
-        if (dto.nearestNeighborK != null) {
-            if (dto.nearestNeighborK < 1 || dto.nearestNeighborK > SceneLimits.MAX_MEMBERS_PER_CLUSTER) {
+        int loadedMetricParameter = 1;
+        if (dto.metricParameter != null) {
+            if (dto.metricParameter < 1 || dto.metricParameter > SceneLimits.MAX_MEMBERS_PER_CLUSTER) {
                 throw new SceneJsonException(
-                        "nearestNeighborK must be between 1 and " + SceneLimits.MAX_MEMBERS_PER_CLUSTER
+                        "metricParameter must be between 1 and " + SceneLimits.MAX_MEMBERS_PER_CLUSTER
                 );
             }
-            loadedNearestNeighborK = dto.nearestNeighborK;
+            loadedMetricParameter = dto.metricParameter;
+        }
+
+        int loadedMemberParameter = SceneLimits.DEFAULT_MEMBER_PARAMETER;
+        if (dto.memberParameter != null) {
+            if (dto.memberParameter < SceneLimits.MIN_POLYGON_VERTICES
+                    || dto.memberParameter > SceneLimits.MAX_POLYGON_VERTICES) {
+                throw new SceneJsonException(
+                        "memberParameter must be between "
+                                + SceneLimits.MIN_POLYGON_VERTICES
+                                + " and "
+                                + SceneLimits.MAX_POLYGON_VERTICES
+                );
+            }
+            loadedMemberParameter = dto.memberParameter;
         }
 
         SceneSnapshot snapshot = new SceneSnapshot();
@@ -95,7 +110,8 @@ public final class SceneFileFormat {
         snapshot.setMetricKind(metricKind);
         snapshot.setNeighborOrder(neighborOrder);
         snapshot.setSiteMemberKind(siteMemberKind);
-        snapshot.setNearestNeighborK(loadedNearestNeighborK);
+        snapshot.setMetricParameter(loadedMetricParameter);
+        snapshot.setMemberParameter(loadedMemberParameter);
         snapshot.setClusters(loaded);
         return snapshot;
     }
@@ -145,6 +161,17 @@ public final class SceneFileFormat {
                     mj.qx = lm.b().x();
                     mj.qy = lm.b().y();
                     members.add(mj);
+                } else if (member instanceof PolygonMember pm) {
+                    MemberJson mj = new MemberJson();
+                    mj.kind = "POLYGON";
+                    List<Vector> verts = pm.vertices();
+                    mj.xs = new double[verts.size()];
+                    mj.ys = new double[verts.size()];
+                    for (int i = 0; i < verts.size(); i++) {
+                        mj.xs[i] = verts.get(i).x();
+                        mj.ys[i] = verts.get(i).y();
+                    }
+                    members.add(mj);
                 }
             }
             Rgba c = site.color();
@@ -165,7 +192,8 @@ public final class SceneFileFormat {
         root.metricKind = snapshot.metricKind().name();
         root.neighborOrder = snapshot.neighborOrder().name();
         root.siteMemberKind = snapshot.siteMemberKind().name();
-        root.nearestNeighborK = snapshot.nearestNeighborK();
+        root.metricParameter = snapshot.metricParameter();
+        root.memberParameter = snapshot.memberParameter();
         root.clusters = clusters;
         return root;
     }
@@ -234,6 +262,7 @@ public final class SceneFileFormat {
                     }
                     out.add(new LineMember(Vector.xy(mj.px, mj.py), Vector.xy(mj.qx, mj.qy)));
                 }
+                case "POLYGON" -> out.add(parsePolygon(mj, clusterName));
                 default -> throw new SceneJsonException("Unknown member kind: " + mj.kind + " in cluster " + clusterName);
             }
         }
@@ -254,6 +283,36 @@ public final class SceneFileFormat {
         );
     }
 
+    private static PolygonMember parsePolygon(MemberJson mj, String clusterName) throws SceneJsonException {
+        if (mj.xs == null || mj.ys == null) {
+            throw new SceneJsonException("POLYGON member requires xs and ys in cluster " + clusterName);
+        }
+        if (mj.xs.length != mj.ys.length) {
+            throw new SceneJsonException("POLYGON member xs and ys length mismatch in cluster " + clusterName);
+        }
+        if (mj.xs.length < SceneLimits.MIN_POLYGON_VERTICES) {
+            throw new SceneJsonException(
+                    "POLYGON member requires at least "
+                            + SceneLimits.MIN_POLYGON_VERTICES
+                            + " vertices in cluster "
+                            + clusterName
+            );
+        }
+        if (mj.xs.length > SceneLimits.MAX_POLYGON_VERTICES) {
+            throw new SceneJsonException(
+                    "POLYGON member has too many vertices (max "
+                            + SceneLimits.MAX_POLYGON_VERTICES
+                            + ") in cluster "
+                            + clusterName
+            );
+        }
+        List<Vector> vertices = new ArrayList<>(mj.xs.length);
+        for (int i = 0; i < mj.xs.length; i++) {
+            vertices.add(Vector.xy(mj.xs[i], mj.ys[i]));
+        }
+        return new PolygonMember(vertices);
+    }
+
     /** Field names match JSON keys. */
     public static final class SceneFileV1 {
         public String version;
@@ -261,7 +320,8 @@ public final class SceneFileFormat {
         public String metricKind;
         public String neighborOrder;
         public String siteMemberKind;
-        public Integer nearestNeighborK;
+        public Integer metricParameter;
+        public Integer memberParameter;
         public List<ClusterJson> clusters;
     }
 
@@ -295,5 +355,8 @@ public final class SceneFileFormat {
         public Double qy;
         public Double hx;
         public Double hy;
+        public double[] xs;
+        public double[] ys;
     }
 }
+

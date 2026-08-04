@@ -7,6 +7,7 @@ import cvdexplorer.model.CircleMember;
 import cvdexplorer.model.ClusterMember;
 import cvdexplorer.model.EllipseMember;
 import cvdexplorer.model.LineMember;
+import cvdexplorer.model.PolygonMember;
 import cvdexplorer.model.SegmentMember;
 import javafx.scene.paint.Color;
 import xyz.marsavic.drawingfx.drawing.View;
@@ -57,6 +58,10 @@ public final class MemberOverlayRenderer {
             if (lm.b().sub(lm.a()).lengthSquared() > 0.0) {
                 view.strokeLine(Line.pq(DrawingFxGeometry.toDrawingFx(lm.a()), DrawingFxGeometry.toDrawingFx(lm.b())));
             }
+        } else if (member instanceof PolygonMember pm) {
+            view.setLineWidth(lw);
+            view.setStroke(memberSelected ? SELECTION_STROKE : edge);
+            strokePolygon(view, pm);
         }
 
         view.setLineWidth(lw);
@@ -79,6 +84,18 @@ public final class MemberOverlayRenderer {
         }
         Vector prev = outline.get(outline.size() - 1);
         for (Vector point : outline) {
+            view.strokeLineSegment(DrawingFxGeometry.toDrawingFx(prev), DrawingFxGeometry.toDrawingFx(point));
+            prev = point;
+        }
+    }
+
+    private static void strokePolygon(View view, PolygonMember pm) {
+        List<Vector> verts = pm.vertices();
+        if (verts.size() < 2) {
+            return;
+        }
+        Vector prev = verts.get(verts.size() - 1);
+        for (Vector point : verts) {
             view.strokeLineSegment(DrawingFxGeometry.toDrawingFx(prev), DrawingFxGeometry.toDrawingFx(point));
             prev = point;
         }

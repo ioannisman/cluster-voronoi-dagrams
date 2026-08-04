@@ -56,4 +56,21 @@ class SiteMemberFactoryTest {
         assertEquals(HINT.y(), mid.y(), 1e-9);
         assertTrue(l.a().distanceTo(l.b()) > 1e-6);
     }
+
+    @Test
+    void polygonMemberIsRegularNGonCenteredOnHint() {
+        ClusterMember m = SiteMemberFactory.createDefault(SiteMemberKind.POLYGON, 0, 0, HINT, 5);
+        PolygonMember p = assertInstanceOf(PolygonMember.class, m);
+        assertEquals(5, p.handleCount());
+        Vector c = p.placementCentroid();
+        assertEquals(HINT.x(), c.x(), 1e-6);
+        assertEquals(HINT.y(), c.y(), 1e-6);
+    }
+
+    @Test
+    void memberParameterIsClampedToMinimumThree() {
+        ClusterMember m = SiteMemberFactory.createDefault(SiteMemberKind.POLYGON, 1, 0, HINT, 1);
+        PolygonMember p = assertInstanceOf(PolygonMember.class, m);
+        assertEquals(3, p.handleCount());
+    }
 }

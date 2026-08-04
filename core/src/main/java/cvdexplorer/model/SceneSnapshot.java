@@ -12,7 +12,9 @@ public final class SceneSnapshot {
     private MetricKind metricKind = MetricKind.MINIMUM_DISTANCE;
     private NeighborOrder neighborOrder = NeighborOrder.NEAREST;
     private SiteMemberKind siteMemberKind = SiteMemberKind.POINT;
-    private int nearestNeighborK = 1;
+    private int metricParameter = 1;
+    /** Creation-time member parameter (e.g. vertex count for new {@link SiteMemberKind#POLYGON} members). */
+    private int memberParameter = SceneLimits.DEFAULT_MEMBER_PARAMETER;
     private final List<ClusterSite> clusters = new ArrayList<>();
 
     public String name() {
@@ -47,12 +49,20 @@ public final class SceneSnapshot {
         this.siteMemberKind = siteMemberKind;
     }
 
-    public int nearestNeighborK() {
-        return nearestNeighborK;
+    public int metricParameter() {
+        return metricParameter;
     }
 
-    public void setNearestNeighborK(int nearestNeighborK) {
-        this.nearestNeighborK = nearestNeighborK;
+    public void setMetricParameter(int metricParameter) {
+        this.metricParameter = metricParameter;
+    }
+
+    public int memberParameter() {
+        return memberParameter;
+    }
+
+    public void setMemberParameter(int memberParameter) {
+        this.memberParameter = memberParameter;
     }
 
     public List<ClusterSite> clusters() {

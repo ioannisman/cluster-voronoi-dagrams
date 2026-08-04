@@ -1,20 +1,12 @@
 package cvdexplorer.model;
 
+import cvdexplorer.geometry.SegmentDistance;
 import cvdexplorer.geometry.Vector;
 
 public record SegmentMember(Vector a, Vector b) implements ClusterMember {
     @Override
     public double distanceTo(Vector point) {
-        Vector ap = point.sub(a);
-        Vector ab = b.sub(a);
-        double ab2 = ab.lengthSquared();
-        if (ab2 <= 0) {
-            return point.distanceTo(a);
-        }
-        double t = ap.dot(ab) / ab2;
-        t = Math.max(0.0, Math.min(1.0, t));
-        Vector closest = a.add(ab.mul(t));
-        return point.distanceTo(closest);
+        return SegmentDistance.distanceToSegment(point, a, b);
     }
 
     @Override

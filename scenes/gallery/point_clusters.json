@@ -4,7 +4,7 @@
   "metricKind": "MINIMUM_DISTANCE",
   "neighborOrder": "NEAREST",
   "siteMemberKind": "POINT",
-  "nearestNeighborK": 1,
+  "metricParameter": 1,
   "clusters": [
     {
       "name": "Amber",

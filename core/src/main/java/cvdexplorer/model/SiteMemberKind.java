@@ -5,5 +5,6 @@ public enum SiteMemberKind {
     LINE_SEGMENT,
     CIRCLE,
     ELLIPSE,
-    LINE
+    LINE,
+    POLYGON
 }
