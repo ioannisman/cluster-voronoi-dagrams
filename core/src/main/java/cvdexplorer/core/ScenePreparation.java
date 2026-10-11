@@ -3,7 +3,7 @@ package cvdexplorer.core;
 import cvdexplorer.metric.ClusterMetric;
 import cvdexplorer.metric.FarthestMemberMetric;
 import cvdexplorer.metric.NearestMemberMetric;
-import cvdexplorer.metric.KthNearestPointDistanceMetric;
+import cvdexplorer.metric.KthNearestMemberDistanceMetric;
 import cvdexplorer.metric.MeanOfDistancesMetric;
 import cvdexplorer.metric.MetricKind;
 import cvdexplorer.metric.SumOfDistancesMetric;
@@ -49,7 +49,7 @@ public final class ScenePreparation {
             case KTH_NEAREST_DISTANCE -> {
                 int minSize = clusters.stream().mapToInt(ClusterSite::size).min().orElse(0);
                 int k = minSize < 1 ? 1 : Math.max(1, Math.min(metricParameter, minSize));
-                yield new KthNearestPointDistanceMetric(k);
+                yield new KthNearestMemberDistanceMetric(k);
             }
         };
     }

@@ -17,9 +17,6 @@ import cvdexplorer.model.GalleryExample;
 import cvdexplorer.model.SceneState;
 import cvdexplorer.model.SceneSnapshot;
 import cvdexplorer.model.SiteMemberFactory;
-import cvdexplorer.model.SiteMemberKind;
-import cvdexplorer.metric.MetricKind;
-import cvdexplorer.metric.MetricMemberCompatibility;
 import cvdexplorer.render.ClusterColorizer;
 import cvdexplorer.render.HelpOverlay;
 import cvdexplorer.render.MemberOverlayRenderer;
@@ -77,13 +74,6 @@ public class AppMain implements Drawing {
     private int selectedHandleIndex = -1;
 
     private GalleryExample prevGalleryExample = state.galleryExample;
-    private MetricKind lastValidMetricKind = state.metricKind;
-    private SiteMemberKind lastValidSiteMemberKind = state.siteMemberKind;
-    private MetricKind lastRejectedMetricKind = null;
-    private SiteMemberKind lastRejectedSiteMemberKind = null;
-    private Integer lastRejectedClusterCount = null;
-    private Integer lastRejectedMemberCount = null;
-    private int lastRejectedMemberCountClusterIndex = -1;
     private Integer lastRejectedMemberCountWithoutSelection = null;
     /**
      * Cluster-count gadget requested a shrink we could not fully apply. Snap back silently
@@ -114,8 +104,6 @@ public class AppMain implements Drawing {
 
     @Override
     public void draw(View view) {
-        normalizeMetricSelection();
-        normalizeSiteMemberKindSelection();
         normalizeClusterCountGadget();
         normalizeSelectedClusterMemberCountGadget();
         state.clampMetricParameter();
@@ -317,25 +305,14 @@ public class AppMain implements Drawing {
             if (inputState.keyPressed(KeyCode.SHIFT)) {
                 if (state.numberOfClusters < SceneState.MAX_CLUSTERS) {
                     state.numberOfClusters++;
-                    String compatibilityError = state.ensureClusterCountMatchesGadget().orElse(null);
-                    if (compatibilityError != null) {
-                        showCompatibilityError(compatibilityError);
-                    } else {
-                        int newIdx = state.clusterCount() - 1;
-                        selectMember(newIdx, 0);
-                    }
+                    state.ensureClusterCountMatchesGadget();
+                    int newIdx = state.clusterCount() - 1;
+                    selectMember(newIdx, 0);
                 }
                 return;
             }
             if (!hasSelection()) {
                 showSelectionRequired("Select a member first to add to its cluster.");
-                return;
-            }
-            String invalidAddMessage = MetricMemberCompatibility.invalidNewMemberMessage(state.metricKind, state.siteMemberKind)
-                    .orElse(null);
-            if (invalidAddMessage != null) {
-                state.siteMemberKind = lastValidSiteMemberKind;
-                showCompatibilityError(invalidAddMessage);
                 return;
             }
             int clusterIdx = selectedClusterIndex;
@@ -380,8 +357,6 @@ public class AppMain implements Drawing {
         if (event.isKeyPress(KeyCode.R)) {
             state.copyFrom(SceneState.demo());
             state.galleryExample = GalleryExample.CURRENT;
-            lastValidMetricKind = state.metricKind;
-            lastValidSiteMemberKind = state.siteMemberKind;
             clearRejectedGadgetAttempts();
             prevGalleryExample = state.galleryExample;
             clearSelection();
@@ -606,56 +581,6 @@ public class AppMain implements Drawing {
         }
     }
 
-    private void normalizeMetricSelection() {
-        MetricKind selectedMetricKind = state.metricKind;
-        if (selectedMetricKind == lastValidMetricKind) {
-            lastRejectedMetricKind = null;
-            return;
-        }
-        if (selectedMetricKind == lastRejectedMetricKind) {
-            state.metricKind = lastValidMetricKind;
-            return;
-        }
-
-        String invalidMetricMessage = MetricMemberCompatibility.invalidMetricMessage(selectedMetricKind, state.clusters())
-                .orElse(null);
-        if (invalidMetricMessage != null) {
-            lastRejectedMetricKind = selectedMetricKind;
-            state.metricKind = lastValidMetricKind;
-            showCompatibilityError(invalidMetricMessage);
-            return;
-        }
-        lastRejectedMetricKind = null;
-        lastValidMetricKind = selectedMetricKind;
-    }
-
-    private void normalizeSiteMemberKindSelection() {
-        SiteMemberKind selectedSiteMemberKind = state.siteMemberKind;
-        if (selectedSiteMemberKind == lastValidSiteMemberKind) {
-            lastRejectedSiteMemberKind = null;
-            return;
-        }
-        if (selectedSiteMemberKind == lastRejectedSiteMemberKind) {
-            state.siteMemberKind = lastValidSiteMemberKind;
-            return;
-        }
-
-        String invalidNewMemberMessage = MetricMemberCompatibility.invalidNewMemberMessage(state.metricKind, selectedSiteMemberKind)
-                .orElse(null);
-        if (invalidNewMemberMessage != null) {
-            lastRejectedSiteMemberKind = selectedSiteMemberKind;
-            state.siteMemberKind = lastValidSiteMemberKind;
-            showCompatibilityError(invalidNewMemberMessage);
-            return;
-        }
-        lastRejectedSiteMemberKind = null;
-        lastValidSiteMemberKind = selectedSiteMemberKind;
-    }
-
-    private void showCompatibilityError(String message) {
-        showErrorDialog("Unsupported metric/member combination", message);
-    }
-
     private void showSelectionRequired(String message) {
         // Defer until keys are up so InputState sees the release before the Alert steals focus.
         queueErrorDialogAfterKeysUp("Selection required", message);
@@ -686,15 +611,7 @@ public class AppMain implements Drawing {
 
     private void normalizeClusterCountGadget() {
         int requestedClusterCount = state.numberOfClusters;
-        String compatibilityError = state.ensureClusterCountMatchesGadget().orElse(null);
-        if (compatibilityError != null) {
-            if (!Integer.valueOf(requestedClusterCount).equals(lastRejectedClusterCount)) {
-                lastRejectedClusterCount = requestedClusterCount;
-                showCompatibilityError(compatibilityError);
-            }
-            return;
-        }
-        lastRejectedClusterCount = null;
+        state.ensureClusterCountMatchesGadget();
 
         if (stuckClusterShrinkRequest != null && state.numberOfClusters > stuckClusterShrinkRequest) {
             stuckClusterShrinkRequest = null;
@@ -740,20 +657,7 @@ public class AppMain implements Drawing {
 
         int clusterIdx = selectedClusterIndex;
         ClusterSite cluster = state.clusters().get(clusterIdx);
-        String compatibilityError = state.ensureMemberCountForCluster(clusterIdx).orElse(null);
-        if (compatibilityError != null) {
-            boolean repeatedRejectedRequest =
-                    clusterIdx == lastRejectedMemberCountClusterIndex
-                            && Integer.valueOf(requestedMemberCount).equals(lastRejectedMemberCount);
-            if (!repeatedRejectedRequest) {
-                lastRejectedMemberCountClusterIndex = clusterIdx;
-                lastRejectedMemberCount = requestedMemberCount;
-                showCompatibilityError(compatibilityError);
-            }
-            return;
-        }
-        lastRejectedMemberCount = null;
-        lastRejectedMemberCountClusterIndex = -1;
+        state.ensureMemberCountForCluster(clusterIdx);
 
         requestedMemberCount = state.targetPointCountForActiveCluster;
         int liveCount = cluster.size();
@@ -793,11 +697,6 @@ public class AppMain implements Drawing {
     }
 
     private void clearRejectedGadgetAttempts() {
-        lastRejectedMetricKind = null;
-        lastRejectedSiteMemberKind = null;
-        lastRejectedClusterCount = null;
-        lastRejectedMemberCount = null;
-        lastRejectedMemberCountClusterIndex = -1;
         lastRejectedMemberCountWithoutSelection = null;
         stuckClusterShrinkRequest = null;
         stuckMemberShrinkRequest = null;
@@ -891,8 +790,6 @@ public class AppMain implements Drawing {
                     snapshot.metricParameter(),
                     snapshot.memberParameter()
             );
-            lastValidMetricKind = state.metricKind;
-            lastValidSiteMemberKind = state.siteMemberKind;
             clearRejectedGadgetAttempts();
             clearSelection();
             state.resetMemberCountGadgetSync();
@@ -937,8 +834,6 @@ public class AppMain implements Drawing {
         try {
             SceneFileIo.load(state, file.toPath());
             state.galleryExample = GalleryExample.CURRENT;
-            lastValidMetricKind = state.metricKind;
-            lastValidSiteMemberKind = state.siteMemberKind;
             clearRejectedGadgetAttempts();
             prevGalleryExample = state.galleryExample;
             clearSelection();

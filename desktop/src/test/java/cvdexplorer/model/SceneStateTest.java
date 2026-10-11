@@ -5,9 +5,9 @@ import org.junit.jupiter.api.Test;
 import cvdexplorer.geometry.Vector;
 
 import java.util.List;
-import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -145,15 +145,14 @@ class SceneStateTest {
         state.clusters().add(new ClusterSite("C", Rgba.BLUE, List.of(new PointMember(Vector.xy(2, 0)))));
         state.numberOfClusters = 2;
 
-        Optional<String> msg = state.ensureClusterCountMatchesGadget();
+        state.ensureClusterCountMatchesGadget();
 
-        assertTrue(msg.isEmpty());
         assertEquals(3, state.clusters().size());
         assertEquals(2, state.numberOfClusters);
     }
 
     @Test
-    void ensureClusterCountMatchesGadgetRejectsIncompatibleNewClusterMember() {
+    void ensureClusterCountMatchesGadgetAddsLineUnderSumOfDistances() {
         ClusterSite first = new ClusterSite("A", Rgba.ORANGE, List.of(new PointMember(Vector.xy(0, 0))));
         SceneState state = new SceneState();
         state.clusters().clear();
@@ -163,16 +162,15 @@ class SceneStateTest {
         state.siteMemberKind = SiteMemberKind.LINE;
         state.numberOfClusters = 2;
 
-        Optional<String> msg = state.ensureClusterCountMatchesGadget();
+        state.ensureClusterCountMatchesGadget();
 
-        assertTrue(msg.isPresent());
-        assertTrue(msg.get().contains("SUM_OF_DISTANCES"));
-        assertEquals(1, state.clusters().size());
-        assertEquals(1, state.numberOfClusters);
+        assertEquals(2, state.clusters().size());
+        assertEquals(2, state.numberOfClusters);
+        assertInstanceOf(LineMember.class, state.clusters().get(1).members().get(0));
     }
 
     @Test
-    void ensureMemberCountForClusterRejectsAddingIncompatibleMember() {
+    void ensureMemberCountForClusterAddsCircleUnderMeanDistance() {
         ClusterSite cluster = new ClusterSite("A", Rgba.CYAN, List.of(new PointMember(Vector.xy(10, 10))));
         List<ClusterSite> loaded = List.of(cluster);
         SceneState state = new SceneState();
@@ -186,11 +184,10 @@ class SceneStateTest {
         );
         state.targetPointCountForActiveCluster = 2;
 
-        Optional<String> msg = state.ensureMemberCountForCluster(0);
+        state.ensureMemberCountForCluster(0);
 
-        assertTrue(msg.isPresent());
-        assertTrue(msg.get().contains("MEAN_DISTANCE"));
-        assertEquals(1, state.clusters().get(0).size());
-        assertEquals(1, state.targetPointCountForActiveCluster);
+        assertEquals(2, state.clusters().get(0).size());
+        assertEquals(2, state.targetPointCountForActiveCluster);
+        assertInstanceOf(CircleMember.class, state.clusters().get(0).members().get(1));
     }
 }

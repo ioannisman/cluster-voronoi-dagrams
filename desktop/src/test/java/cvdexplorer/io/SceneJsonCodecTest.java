@@ -1,5 +1,7 @@
 package cvdexplorer.io;
 
+import cvdexplorer.core.ClusterOwnershipSelector;
+import cvdexplorer.core.ScenePreparation;
 import cvdexplorer.metric.MetricKind;
 import cvdexplorer.model.CircleMember;
 import cvdexplorer.model.ClusterSite;
@@ -14,6 +16,8 @@ import cvdexplorer.model.SceneState;
 import cvdexplorer.model.SegmentMember;
 import cvdexplorer.model.SiteMemberKind;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
 import cvdexplorer.geometry.Vector;
 
 import java.util.List;
@@ -25,41 +29,18 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class SceneJsonCodecTest {
 
-    @Test
-    void encodeDecodeRoundTripPreservesClustersMetricAndMembers() throws Exception {
+    @ParameterizedTest
+    @EnumSource(MetricKind.class)
+    void encodeDecodeRoundTripPreservesClustersMetricAndMembers(MetricKind metricKind) throws Exception {
+        int metricParameter = metricKind == MetricKind.KTH_NEAREST_DISTANCE ? 2 : 1;
         SceneSnapshot source = new SceneSnapshot();
-        source.setMetricKind(MetricKind.MINIMUM_DISTANCE);
+        source.setMetricKind(metricKind);
         source.setNeighborOrder(NeighborOrder.FARTHEST);
         source.setSiteMemberKind(SiteMemberKind.LINE);
+        source.setMetricParameter(metricParameter);
         source.setMemberParameter(5);
         source.setName("Round-trip example");
-        source.setClusters(List.of(
-                new ClusterSite(
-                        "Alpha",
-                        new Rgba(0.2, 0.4, 0.6, 0.95),
-                        List.of(
-                                new PointMember(Vector.xy(10, -20)),
-                                new SegmentMember(Vector.xy(0, 0), Vector.xy(100, 5)),
-                                new CircleMember(Vector.xy(20, 30), Vector.xy(26, 30)),
-                                new LineMember(Vector.xy(-10, 5), Vector.xy(15, 35)),
-                                new EllipseMember(
-                                        Vector.xy(-20, 0),
-                                        Vector.xy(20, 0),
-                                        Vector.xy(0, 15)
-                                ),
-                                new PolygonMember(List.of(
-                                        Vector.xy(0, 0),
-                                        Vector.xy(4, 0),
-                                        Vector.xy(2, 3)
-                                ))
-                        )
-                ),
-                new ClusterSite(
-                        "Beta",
-                        Rgba.hsb(120, 0.5, 0.9),
-                        List.of(new PointMember(Vector.xy(3, 4)))
-                )
-        ));
+        source.setClusters(mixedMemberClusters());
 
         String json = SceneJsonCodec.encode(source);
         SceneSnapshot parsed = SceneJsonCodec.parse(json);
@@ -81,10 +62,10 @@ class SceneJsonCodecTest {
                 parsed.memberParameter()
         );
 
-        assertEquals(MetricKind.MINIMUM_DISTANCE, restored.metricKind);
+        assertEquals(metricKind, restored.metricKind);
         assertEquals(NeighborOrder.FARTHEST, restored.neighborOrder);
         assertEquals(SiteMemberKind.LINE, restored.siteMemberKind);
-        assertEquals(source.metricParameter(), restored.metricParameter);
+        assertEquals(metricParameter, restored.metricParameter);
         assertEquals(5, restored.memberParameter);
         assertEquals(2, restored.clusters().size());
 
@@ -112,8 +93,73 @@ class SceneJsonCodecTest {
         assertEquals(0.0, e.controlHandle().x(), 1e-9);
         assertEquals(15.0, e.controlHandle().y(), 1e-9);
 
+        assertEquals(2, restored.clusters().get(1).members().size());
         assertTrue(json.contains("\"kind\": \"CIRCLE\""));
         assertTrue(json.contains("\"kind\": \"ELLIPSE\""));
+        assertClusterScoresMatch(source.clusters(), restored.clusters(), metricKind, metricParameter);
+    }
+
+    private static List<ClusterSite> mixedMemberClusters() {
+        return List.of(
+                new ClusterSite(
+                        "Alpha",
+                        new Rgba(0.2, 0.4, 0.6, 0.95),
+                        List.of(
+                                new PointMember(Vector.xy(10, -20)),
+                                new SegmentMember(Vector.xy(0, 0), Vector.xy(100, 5)),
+                                new CircleMember(Vector.xy(20, 30), Vector.xy(26, 30)),
+                                new LineMember(Vector.xy(-10, 5), Vector.xy(15, 35)),
+                                new EllipseMember(
+                                        Vector.xy(-20, 0),
+                                        Vector.xy(20, 0),
+                                        Vector.xy(0, 15)
+                                ),
+                                new PolygonMember(List.of(
+                                        Vector.xy(0, 0),
+                                        Vector.xy(4, 0),
+                                        Vector.xy(2, 3)
+                                ))
+                        )
+                ),
+                new ClusterSite(
+                        "Beta",
+                        Rgba.hsb(120, 0.5, 0.9),
+                        List.of(
+                                new PointMember(Vector.xy(3, 4)),
+                                new PointMember(Vector.xy(8, 9))
+                        )
+                )
+        );
+    }
+
+    private static void assertClusterScoresMatch(
+            List<ClusterSite> before,
+            List<ClusterSite> after,
+            MetricKind metricKind,
+            int metricParameter
+    ) {
+        ScenePreparation.PreparedScene sourceScene = ScenePreparation.prepare(
+                before,
+                metricKind,
+                NeighborOrder.NEAREST,
+                metricParameter
+        );
+        ScenePreparation.PreparedScene restoredScene = ScenePreparation.prepare(
+                after,
+                metricKind,
+                NeighborOrder.NEAREST,
+                metricParameter
+        );
+        List<Vector> queries = List.of(Vector.xy(0, 0), Vector.xy(10, -20), Vector.xy(40, 25));
+        for (Vector query : queries) {
+            for (int i = 0; i < before.size(); i++) {
+                assertEquals(
+                        sourceScene.metric().score(query, sourceScene.clusters().get(i)),
+                        restoredScene.metric().score(query, restoredScene.clusters().get(i)),
+                        1e-9
+                );
+            }
+        }
     }
 
     @Test
@@ -168,33 +214,91 @@ class SceneJsonCodecTest {
     }
 
     @Test
-    void rejectsSumOfDistancesWithCircleMembers() {
-        String json = """
-                {
-                  "version": "1",
-                  "metricKind": "SUM_OF_DISTANCES",
-                  "siteMemberKind": "POINT",
-                  "clusters": [
-                    {
-                      "name": "Alpha",
-                      "color": {"r": 0.1, "g": 0.2, "b": 0.3, "opacity": 1.0},
-                      "members": [
-                        {"kind": "CIRCLE", "cx": 1.0, "cy": 2.0, "radius": 4.0}
-                      ]
-                    }
-                  ]
-                }
-                """;
-        SceneJsonException ex = assertThrows(SceneJsonException.class, () -> SceneJsonCodec.parse(json));
-        assertTrue(ex.getMessage().contains("SUM_OF_DISTANCES"));
+    void loadsSumOfDistancesWithCircleMembers() throws Exception {
+        SceneSnapshot parsed = SceneJsonCodec.parse(circleClusterJson("SUM_OF_DISTANCES"));
+
+        assertEquals(MetricKind.SUM_OF_DISTANCES, parsed.metricKind());
+        CircleMember circle = assertInstanceOf(CircleMember.class, parsed.clusters().get(0).members().get(0));
+        assertEquals(4.0, circle.radius(), 1.0e-9);
     }
 
     @Test
-    void rejectsMeanDistanceWithCircleMembers() {
+    void loadsMeanDistanceWithCircleMembers() throws Exception {
+        SceneSnapshot parsed = SceneJsonCodec.parse(circleClusterJson("MEAN_DISTANCE"));
+
+        assertEquals(MetricKind.MEAN_DISTANCE, parsed.metricKind());
+        CircleMember circle = assertInstanceOf(CircleMember.class, parsed.clusters().get(0).members().get(0));
+        assertEquals(4.0, circle.radius(), 1.0e-9);
+    }
+
+    @Test
+    void loadsKthNearestCircleClustersAndSelectsByAggregateScore() throws Exception {
         String json = """
                 {
                   "version": "1",
-                  "metricKind": "MEAN_DISTANCE",
+                  "metricKind": "KTH_NEAREST_DISTANCE",
+                  "neighborOrder": "NEAREST",
+                  "siteMemberKind": "CIRCLE",
+                  "metricParameter": 2,
+                  "clusters": [
+                    {
+                      "name": "Alpha",
+                      "color": {"r": 1.0, "g": 0.0, "b": 0.0, "opacity": 1.0},
+                      "members": [
+                        {"kind": "CIRCLE", "cx": 0.0, "cy": 0.0, "radius": 1.0},
+                        {"kind": "CIRCLE", "cx": 0.0, "cy": 0.0, "radius": 3.0}
+                      ]
+                    },
+                    {
+                      "name": "Beta",
+                      "color": {"r": 0.0, "g": 0.0, "b": 1.0, "opacity": 1.0},
+                      "members": [
+                        {"kind": "CIRCLE", "cx": 6.0, "cy": 0.0, "radius": 1.0},
+                        {"kind": "CIRCLE", "cx": 6.0, "cy": 0.0, "radius": 2.0}
+                      ]
+                    }
+                  ]
+                }
+                """;
+        SceneSnapshot parsed = SceneJsonCodec.parse(json);
+        assertEquals(MetricKind.KTH_NEAREST_DISTANCE, parsed.metricKind());
+        assertInstanceOf(CircleMember.class, parsed.clusters().get(0).members().get(0));
+
+        Vector query = Vector.xy(10, 0);
+        ScenePreparation.PreparedScene nearest = ScenePreparation.prepare(
+                parsed.clusters(),
+                parsed.metricKind(),
+                NeighborOrder.NEAREST,
+                parsed.metricParameter()
+        );
+        ClusterOwnershipSelector.Result nearestOwner = nearest.ownershipSelector().selectOwner(
+                query,
+                nearest.clusters(),
+                nearest.metric()
+        );
+        assertEquals(1, nearestOwner.clusterIndex());
+        assertEquals(3.0, nearestOwner.score(), 1.0e-9);
+
+        ScenePreparation.PreparedScene farthest = ScenePreparation.prepare(
+                parsed.clusters(),
+                parsed.metricKind(),
+                NeighborOrder.FARTHEST,
+                parsed.metricParameter()
+        );
+        ClusterOwnershipSelector.Result farthestOwner = farthest.ownershipSelector().selectOwner(
+                query,
+                farthest.clusters(),
+                farthest.metric()
+        );
+        assertEquals(0, farthestOwner.clusterIndex());
+        assertEquals(9.0, farthestOwner.score(), 1.0e-9);
+    }
+
+    private static String circleClusterJson(String metricKind) {
+        return """
+                {
+                  "version": "1",
+                  "metricKind": "%s",
                   "siteMemberKind": "POINT",
                   "clusters": [
                     {
@@ -206,9 +310,7 @@ class SceneJsonCodecTest {
                     }
                   ]
                 }
-                """;
-        SceneJsonException ex = assertThrows(SceneJsonException.class, () -> SceneJsonCodec.parse(json));
-        assertTrue(ex.getMessage().contains("MEAN_DISTANCE"));
+                """.formatted(metricKind);
     }
 
     @Test
