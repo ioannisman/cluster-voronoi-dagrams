@@ -18,7 +18,7 @@ Each metric defines how the distance from a query point to a cluster is measured
 
 The metrics below are illustrated with **clusters of point members** only (`points_*` figures). Each definition is followed by two images: **nearest** and **farthest** neighbor order.
 
-The sum, mean, and *k*-th nearest metrics apply only when every member in every cluster is a point.
+Sum, mean, and *k*-th nearest distance each use one distance per member. A member may be a point, segment, circle, ellipse, line, or polygon, and one cluster may mix those types. A circle or a polygon contributes its distance to the query as a single term, not one term for every boundary point or vertex.
 
 ### `MINIMUM_DISTANCE`
 
@@ -38,7 +38,7 @@ Distance to the farthest member in that cluster.
 
 ### `SUM_OF_DISTANCES`
 
-Sum of distances to every point member in the cluster. **Points only.**
+Sum of the distances to the members in the cluster.
 
 | Nearest (min-sum) | Farthest (max-sum) |
 |:---:|:---:|
@@ -46,7 +46,7 @@ Sum of distances to every point member in the cluster. **Points only.**
 
 ### `MEAN_DISTANCE`
 
-Average of distances to all point members in the cluster. **Points only.**
+Mean of the distances to the members in the cluster.
 
 | Nearest (min-mean) | Farthest (max-mean) |
 |:---:|:---:|
@@ -54,7 +54,7 @@ Average of distances to all point members in the cluster. **Points only.**
 
 ### `KTH_NEAREST_DISTANCE`
 
-Distance to the *k*-th nearest point member in that cluster. *k* = 1 is the same as `MINIMUM_DISTANCE`. **Points only.** Examples use *k* = 2.
+Distance to the *k*-th nearest member in that cluster. *k* = 1 has the same score as `MINIMUM_DISTANCE`. When *k* equals the number of members, the score matches `MAXIMUM_DISTANCE`. The application uses one shared *k* for every cluster, clamped to the size of the smallest cluster. Examples use *k* = 2.
 
 | Nearest (min-2nd) | Farthest (max-2nd) |
 |:---:|:---:|

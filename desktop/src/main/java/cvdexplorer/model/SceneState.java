@@ -1,6 +1,5 @@
 package cvdexplorer.model;
 
-import cvdexplorer.metric.MetricMemberCompatibility;
 import cvdexplorer.metric.MetricKind;
 import xyz.marsavic.drawingfx.gadgets.annotations.GadgetBoolean;
 import xyz.marsavic.drawingfx.gadgets.annotations.GadgetEnum;
@@ -10,7 +9,6 @@ import cvdexplorer.geometry.Vector;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
 
 public final class SceneState {
     public static final int MAX_CLUSTERS = SceneLimits.MAX_CLUSTERS;
@@ -235,29 +233,23 @@ public final class SceneState {
      * Grows the cluster list to match {@link #numberOfClusters}. Does not shrink;
      * the app removes a selected cluster when the count decreases.
      */
-    public Optional<String> ensureClusterCountMatchesGadget() {
+    public void ensureClusterCountMatchesGadget() {
         numberOfClusters = Math.max(1, Math.min(MAX_CLUSTERS, numberOfClusters));
         while (clusters.size() < numberOfClusters) {
-            Optional<String> invalidNewMember = MetricMemberCompatibility.invalidNewMemberMessage(metricKind, siteMemberKind);
-            if (invalidNewMember.isPresent()) {
-                numberOfClusters = clusters.size();
-                return invalidNewMember;
-            }
             clusters.add(defaultCluster(clusters.size()));
         }
         if (numberOfClusters > clusters.size()) {
             numberOfClusters = clusters.size();
         }
-        return Optional.empty();
     }
 
     /**
      * Grows member count for the given cluster to match {@link #targetPointCountForActiveCluster}.
      * Does not shrink; the app removes the selected member when the count decreases.
      */
-    public Optional<String> ensureMemberCountForCluster(int clusterIndex) {
+    public void ensureMemberCountForCluster(int clusterIndex) {
         if (clusters.isEmpty() || clusterIndex < 0 || clusterIndex >= clusters.size()) {
-            return Optional.empty();
+            return;
         }
 
         targetPointCountForActiveCluster = Math.max(
@@ -276,11 +268,6 @@ public final class SceneState {
         ClusterSite cluster = clusters.get(clusterIndex);
 
         while (cluster.size() < targetPointCountForActiveCluster) {
-            Optional<String> invalidNewMember = MetricMemberCompatibility.invalidNewMemberMessage(metricKind, siteMemberKind);
-            if (invalidNewMember.isPresent()) {
-                targetPointCountForActiveCluster = cluster.size();
-                return invalidNewMember;
-            }
             Vector hint = jitteredNewMemberHint(cluster, clusterIndex, cluster.size());
             cluster.addMember(SiteMemberFactory.createDefault(
                     siteMemberKind,
@@ -290,7 +277,6 @@ public final class SceneState {
                     clampedMemberParameter()
             ));
         }
-        return Optional.empty();
     }
 
     /** Resets member-count gadget sync so the next selection adopts the cluster's real size. */
