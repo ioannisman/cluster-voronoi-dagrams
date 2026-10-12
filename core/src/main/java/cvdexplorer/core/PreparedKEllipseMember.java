@@ -1,40 +1,37 @@
 package cvdexplorer.core;
 
+import cvdexplorer.field.DistanceGrid2D;
 import cvdexplorer.geometry.Vector;
-import cvdexplorer.kellipse.PreparedKEllipseBoundary;
 import cvdexplorer.model.ClusterMember;
 import cvdexplorer.model.KEllipseMember;
 
 /**
- * Temporary query wrapper. Distance is the prepared polyline index.
- * The grid stage replaces this path; production queries must not keep it.
+ * Query wrapper for one k-ellipse. Distance is the absolute value of this member's
+ * signed-distance grid. The grid is fixed for the wrapper; queries do not build or search.
  */
 public final class PreparedKEllipseMember implements ClusterMember {
     private final KEllipseMember source;
-    private final PreparedKEllipseBoundary boundary;
+    private final DistanceGrid2D grid;
 
-    public PreparedKEllipseMember(KEllipseMember source, PreparedKEllipseBoundary boundary) {
-        if (source == null || boundary == null) {
-            throw new IllegalArgumentException("Prepared k-ellipse requires a source and a boundary");
-        }
-        if (boundary.source() != source) {
-            throw new IllegalArgumentException("Prepared k-ellipse boundary does not belong to this source");
+    public PreparedKEllipseMember(KEllipseMember source, DistanceGrid2D grid) {
+        if (source == null || grid == null) {
+            throw new IllegalArgumentException("Prepared k-ellipse requires a source and a distance grid");
         }
         this.source = source;
-        this.boundary = boundary;
+        this.grid = grid;
     }
 
     public KEllipseMember source() {
         return source;
     }
 
-    public PreparedKEllipseBoundary boundary() {
-        return boundary;
+    public DistanceGrid2D grid() {
+        return grid;
     }
 
     @Override
     public double distanceTo(Vector point) {
-        return boundary.index().distanceTo(point);
+        return Math.abs(grid.interpolate(point.x(), point.y()));
     }
 
     @Override

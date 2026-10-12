@@ -1,6 +1,5 @@
 package cvdexplorer.kellipse;
 
-import cvdexplorer.core.PreparedKEllipseMember;
 import cvdexplorer.geometry.ClosedPolyline;
 import cvdexplorer.geometry.Vector;
 import cvdexplorer.instrument.Counters;
@@ -29,20 +28,14 @@ class KEllipseBoundaryBuilderTest {
         double radius = member.level() / 3.0;
         assertEquals(10.0, radius, 1e-12);
         PreparedKEllipseBoundary boundary = BUILDER.build(member);
-        PreparedKEllipseMember prepared = new PreparedKEllipseMember(member, boundary);
         double tolerance = 2.0 * KEllipseApproximationSettings.DEFAULT.chordTolerance();
         double[][] points = {{1, 1}, {1, 11}, {1, 16}, {6, 1}, {1, -4}};
         for (double[] point : points) {
             double expected = Math.abs(Math.hypot(point[0] - 1, point[1] - 1) - radius);
-            assertEquals(expected, prepared.distanceTo(Vector.xy(point[0], point[1])), tolerance);
+            assertEquals(expected, boundary.index().distanceTo(point[0], point[1]), tolerance);
         }
         assertAnglesIncrease(boundary);
         assertFalse(boundary.diagnostics().refinementCapHit());
-        assertThrows(UnsupportedOperationException.class, () -> prepared.withHandle(0, Vector.ZERO));
-        assertThrows(IllegalArgumentException.class, () -> new PreparedKEllipseMember(
-                new KEllipseMember(List.of(focus, focus, Vector.xy(2, 2)), Vector.xy(1, 11)),
-                boundary
-        ));
     }
 
     @Test
