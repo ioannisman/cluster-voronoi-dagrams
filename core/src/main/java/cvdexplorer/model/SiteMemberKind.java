@@ -6,5 +6,6 @@ public enum SiteMemberKind {
     CIRCLE,
     ELLIPSE,
     LINE,
-    POLYGON
+    POLYGON,
+    K_ELLIPSE
 }

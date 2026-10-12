@@ -48,7 +48,23 @@ public final class SiteMemberFactory {
                 yield new LineMember(hint.sub(half), hint.add(half));
             }
             case POLYGON -> regularPolygon(hint, memberParameter, clusterIndex, memberIndex);
+            case K_ELLIPSE -> kEllipse(hint, memberParameter, clusterIndex, memberIndex);
         };
+    }
+
+    /**
+     * Foci lie on a circle of radius 18 around the hint. The control handle is 48 from the hint,
+     * so {@code c - min F >= n * (48 - 18) - n * 18 = 12n}: the curve's inner radius is at least 12.
+     */
+    private static KEllipseMember kEllipse(Vector hint, int focusCount, int clusterIndex, int memberIndex) {
+        int n = Math.max(SceneLimits.MIN_KELLIPSE_FOCI, Math.min(SceneLimits.MAX_KELLIPSE_FOCI, focusCount));
+        double rotationTurns = memberIndex * 0.618033988749895 + clusterIndex * 0.31;
+        List<Vector> foci = new ArrayList<>(n);
+        for (int i = 0; i < n; i++) {
+            foci.add(hint.add(Vector.polar(18, rotationTurns + (double) i / n)));
+        }
+        Vector control = hint.add(Vector.polar(48, rotationTurns + 0.25));
+        return new KEllipseMember(foci, control);
     }
 
     private static PolygonMember regularPolygon(Vector hint, int vertexCount, int clusterIndex, int memberIndex) {

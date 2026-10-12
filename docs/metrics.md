@@ -18,7 +18,7 @@ Each metric defines how the distance from a query point to a cluster is measured
 
 The metrics below are illustrated with **clusters of point members** only (`points_*` figures). Each definition is followed by two images: **nearest** and **farthest** neighbor order.
 
-Sum, mean, and *k*-th nearest distance each use one distance per member. A member may be a point, segment, circle, ellipse, line, or polygon, and one cluster may mix those types. A circle or a polygon contributes its distance to the query as a single term, not one term for every boundary point or vertex.
+Sum, mean, and *k*-th nearest distance each use one distance per member. A member may be a point, segment, circle, ellipse, line, polygon, or k-ellipse, and one cluster may mix those types. A circle, a polygon, or a k-ellipse contributes its distance to the query as a single term, not one term for every focus, boundary point, or vertex.
 
 ### `MINIMUM_DISTANCE`
 

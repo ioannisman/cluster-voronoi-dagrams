@@ -1,0 +1,79 @@
+{
+  "version": "1",
+  "name": "K-ellipses",
+  "metricKind": "MINIMUM_DISTANCE",
+  "neighborOrder": "NEAREST",
+  "siteMemberKind": "K_ELLIPSE",
+  "metricParameter": 1,
+  "memberParameter": 4,
+  "clusters": [
+    {
+      "name": "Cedar",
+      "color": { "r": 0.85, "g": 0.45, "b": 0.2, "opacity": 1.0 },
+      "members": [
+        {
+          "kind": "K_ELLIPSE",
+          "xs": [-168.0, -150.0, -132.0],
+          "ys": [40.0, 58.0, 40.0],
+          "hx": -150.0,
+          "hy": 88.0
+        },
+        { "kind": "POINT", "x": -80.0, "y": 20.0 }
+      ]
+    },
+    {
+      "name": "Indigo",
+      "color": { "r": 0.25, "g": 0.35, "b": 0.85, "opacity": 1.0 },
+      "members": [
+        {
+          "kind": "K_ELLIPSE",
+          "xs": [72.0, 88.0, 80.0, 80.0],
+          "ys": [60.0, 60.0, 76.0, 44.0],
+          "hx": 80.0,
+          "hy": 108.0
+        },
+        {
+          "kind": "LINE_SEGMENT",
+          "ax": 40.0,
+          "ay": -20.0,
+          "bx": 130.0,
+          "by": -50.0
+        }
+      ]
+    },
+    {
+      "name": "Gold",
+      "color": { "r": 0.9, "g": 0.75, "b": 0.2, "opacity": 1.0 },
+      "members": [
+        {
+          "kind": "K_ELLIPSE",
+          "xs": [-40.0, -24.0, -32.0, -32.0, -16.0],
+          "ys": [-90.0, -90.0, -74.0, -106.0, -82.0],
+          "hx": -32.0,
+          "hy": -42.0
+        }
+      ]
+    },
+    {
+      "name": "Teal",
+      "color": { "r": 0.15, "g": 0.65, "b": 0.6, "opacity": 1.0 },
+      "members": [
+        { "kind": "POINT", "x": 150.0, "y": -110.0 },
+        {
+          "kind": "K_ELLIPSE",
+          "xs": [140.0, 160.0, 150.0],
+          "ys": [-40.0, -40.0, -22.0],
+          "hx": 150.0,
+          "hy": 8.0
+        },
+        {
+          "kind": "LINE_SEGMENT",
+          "ax": 100.0,
+          "ay": -120.0,
+          "bx": 190.0,
+          "by": -140.0
+        }
+      ]
+    }
+  ]
+}

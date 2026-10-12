@@ -1,6 +1,7 @@
 {
   "files": [
     "default_cvd.json",
-    "point_clusters.json"
+    "point_clusters.json",
+    "k_ellipses.json"
   ]
 }
