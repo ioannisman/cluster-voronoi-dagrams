@@ -7,8 +7,9 @@ import cvdexplorer.geometry.Vector;
 
 /**
  * Turns the world rectangle that will be queried into one shared grid spec.
- * An existing spec is reused while it covers that rectangle. Growth adds a margin
- * so a small pan does not rebuild. The spec never shrinks on its own.
+ * An existing spec is reused while it covers that rectangle.
+ * Growth adds a margin so a small pan does not rebuild. The margin fraction is total growth:
+ * {@code 0.25} adds 12.5% of the extent on each side.
  */
 public final class QueryDomainPolicy {
     public static final double DEFAULT_SPACING = 2.0;
@@ -69,8 +70,8 @@ public final class QueryDomainPolicy {
         double minY = oriented.p().y();
         double maxX = oriented.q().x();
         double maxY = oriented.q().y();
-        double padX = marginFraction * (maxX - minX);
-        double padY = marginFraction * (maxY - minY);
+        double padX = 0.5 * marginFraction * (maxX - minX);
+        double padY = 0.5 * marginFraction * (maxY - minY);
         return Box.pq(Vector.xy(minX - padX, minY - padY), Vector.xy(maxX + padX, maxY + padY));
     }
 }

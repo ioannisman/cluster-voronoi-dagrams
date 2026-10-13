@@ -38,7 +38,7 @@ Chord refinement of the polyline is a practical midpoint check. It is not a cert
 
 One world-space rectangle and one spacing are shared by every k-ellipse. Each member stores its own samples on that rectangle.
 
-The rectangle comes from the current view, including skeleton and subdivision queries, plus one spacing of padding, then a 25% growth margin snapped to the grid. It does not follow the k-ellipse's own bounding box.
+The rectangle comes from the current view, including skeleton and subdivision queries, plus one spacing of padding, then grown by 25% in total (12.5% on each side) and snapped to the grid. It does not follow the k-ellipse's own bounding box.
 
 - Moving a focus does not move the rectangle. It rebuilds that member's boundary and grid.
 - Moving another member does not rebuild this member's grid.
@@ -46,7 +46,7 @@ The rectangle comes from the current view, including skeleton and subdivision qu
 - Panning or zooming inside the prepared rectangle reuses the grids.
 - Zooming does not change the spacing. A closer view can show the grid.
 - Leaving the rectangle expands it and rebuilds the grids. Boundaries that did not change are kept.
-- The rectangle does not shrink on every frame.
+- The rectangle does not shrink on every frame. If keeping the larger rectangle would put the distance grids over the memory limit, it is rebuilt for the current view at the same spacing.
 
 If the requested grid would exceed 8192 nodes on an axis, 16,777,216 nodes in one grid, or 256 MB of samples in total, preparation stops and the diagram stays hidden. Quality is not reduced to fit.
 

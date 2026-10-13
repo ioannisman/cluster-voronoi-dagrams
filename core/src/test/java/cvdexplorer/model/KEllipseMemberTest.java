@@ -9,6 +9,7 @@ import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -68,6 +69,8 @@ class KEllipseMemberTest {
         assertEquals(Vector.xy(0, 3), ellipse.controlHandle());
         assertEquals(moved.focalSum(0, 6), moved.level(), 0.0);
         assertTrue(moved.level() > originalLevel);
+        assertSame(ellipse, ellipse.withHandle(0, ellipse.getHandle(0)));
+        assertSame(ellipse, ellipse.withHandle(3, ellipse.controlHandle()));
 
         KEllipseMember movedFocus = (KEllipseMember) ellipse.withHandle(0, Vector.xy(-1, 0));
         assertEquals(Vector.xy(-1, 0), movedFocus.getHandle(0));

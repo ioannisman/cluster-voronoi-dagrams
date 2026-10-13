@@ -116,7 +116,13 @@ public final class KEllipseMember implements ClusterMember {
             throw new IndexOutOfBoundsException(index);
         }
         if (index == foci.length) {
+            if (controlHandle.equals(v)) {
+                return this;
+            }
             return new KEllipseMember(foci.clone(), v);
+        }
+        if (foci[index].equals(v)) {
+            return this;
         }
         Vector[] next = foci.clone();
         next[index] = v;

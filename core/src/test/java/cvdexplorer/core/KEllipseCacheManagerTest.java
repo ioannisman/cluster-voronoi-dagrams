@@ -147,6 +147,73 @@ class KEllipseCacheManagerTest {
     }
 
     @Test
+    void zoomInRecoversWhenTheRetainedDomainExceedsTheBudget() throws Exception {
+        QueryDomainPolicy policy = new QueryDomainPolicy();
+        Box large = box(-100, -100, 100, 100);
+        Box small = box(0, 0, 10, 10);
+        long largeBytes = policy.ensureCovers(null, large).sampleBytes();
+        long smallBytes = policy.ensureCovers(null, small).sampleBytes();
+        assertTrue(smallBytes * 2 <= largeBytes);
+        DistanceGridLimits limits = new DistanceGridLimits(8192, 16_777_216, largeBytes + 16);
+        ScenePreparer preparer = new ScenePreparer(
+                policy,
+                new KEllipseCacheManager(new KEllipseBoundaryBuilder(KEllipseApproximationSettings.DEFAULT), limits)
+        );
+        KEllipseMember first = ellipseAt(0, 0);
+        ClusterSite site = new ClusterSite("A", Rgba.RED, new ArrayList<>(List.of(first)));
+        preparer.prepare(List.of(site), MetricKind.MINIMUM_DISTANCE, NeighborOrder.NEAREST, 1, large);
+        var boundary = preparer.cachedBoundary(first);
+        long retainedBytes = preparer.currentDomain().sampleBytes();
+
+        site.addMember(ellipseAt(30, 0));
+        assertThrows(DomainLimitExceededException.class, () -> preparer.prepare(
+                List.of(site), MetricKind.MINIMUM_DISTANCE, NeighborOrder.NEAREST, 1, large
+        ));
+
+        ScenePreparation.PreparedScene recovered = preparer.prepare(
+                List.of(site), MetricKind.MINIMUM_DISTANCE, NeighborOrder.NEAREST, 1, small
+        );
+        assertTrue(recovered.domain().sampleBytes() < retainedBytes);
+        assertSame(boundary, preparer.cachedBoundary(first));
+        assertEquals(2, preparer.statistics().cachedMembers());
+    }
+
+    @Test
+    void pruningDropsHistoricalEditsAndRejectedCandidates() throws Exception {
+        QueryDomainPolicy policy = new QueryDomainPolicy();
+        long oneGrid = policy.ensureCovers(null, VIEW).sampleBytes();
+        ScenePreparer preparer = new ScenePreparer(
+                policy,
+                new KEllipseCacheManager(
+                        new KEllipseBoundaryBuilder(KEllipseApproximationSettings.DEFAULT),
+                        new DistanceGridLimits(8192, 16_777_216, oneGrid / 2)
+                )
+        );
+        KEllipseMember live = ellipseAt(0, 0);
+        ClusterSite site = new ClusterSite("A", Rgba.RED, new ArrayList<>(List.of(live)));
+        List<ClusterSite> clusters = List.of(site);
+        assertThrows(DomainLimitExceededException.class, () -> preparer.prepare(
+                clusters, MetricKind.MINIMUM_DISTANCE, NeighborOrder.NEAREST, 1, VIEW
+        ));
+
+        for (int i = 0; i < 12; i++) {
+            KEllipseMember next = (KEllipseMember) live.withHandle(3, Vector.xy(0, 12 + i + 1));
+            preparer.validate(next);
+            site.setMember(0, next);
+            live = next;
+            preparer.evictAbsent(clusters);
+        }
+        assertEquals(1, preparer.statistics().cachedMembers());
+
+        KEllipseMember tentative = (KEllipseMember) live.withHandle(3, Vector.xy(4, 40));
+        preparer.validate(tentative);
+        assertEquals(2, preparer.statistics().cachedMembers());
+        preparer.evictAbsent(clusters);
+        assertEquals(1, preparer.statistics().cachedMembers());
+        assertSame(live, site.members().get(0));
+    }
+
+    @Test
     void rejectsACacheThatWouldExceedTheByteCap() throws Exception {
         KEllipseCacheManager cache = new KEllipseCacheManager(
                 new KEllipseBoundaryBuilder(KEllipseApproximationSettings.DEFAULT),

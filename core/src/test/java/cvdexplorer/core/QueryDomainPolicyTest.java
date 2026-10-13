@@ -33,6 +33,18 @@ class QueryDomainPolicyTest {
     }
 
     @Test
+    void marginGrowsTheRequiredBoxByTwentyFivePercentInTotal() {
+        DistanceGridSpec spec = policy.ensureCovers(null, box(0, 0, 100, 100));
+        double spanX = spec.maxX() - spec.originX();
+        double spanY = spec.maxY() - spec.originY();
+        assertTrue(spanX >= 125.0 - 1e-6, "spanX " + spanX);
+        assertTrue(spanY >= 125.0 - 1e-6, "spanY " + spanY);
+        assertTrue(spanX <= 125.0 + 2.0 * QueryDomainPolicy.DEFAULT_SPACING, "spanX " + spanX);
+        assertTrue(spanY <= 125.0 + 2.0 * QueryDomainPolicy.DEFAULT_SPACING, "spanY " + spanY);
+        assertTrue(spec.covers(box(0, 0, 100, 100)));
+    }
+
+    @Test
     void rejectsAGridPastTheNodeLimit() {
         QueryDomainPolicy tight = new QueryDomainPolicy(
                 2.0,

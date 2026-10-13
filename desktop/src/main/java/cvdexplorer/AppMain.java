@@ -6,11 +6,13 @@ import cvdexplorer.core.QueryDomainPolicy;
 import cvdexplorer.core.ScenePreparation.PreparedScene;
 import cvdexplorer.core.ScenePreparer;
 import cvdexplorer.field.DistanceGrid2D;
+import cvdexplorer.field.DistanceGridLimits;
 import cvdexplorer.desktop.DrawingFxGeometry;
 import cvdexplorer.desktop.FxColors;
 import cvdexplorer.geometry.Box;
 import cvdexplorer.geometry.Transformation;
 import cvdexplorer.geometry.Vector;
+import cvdexplorer.io.PreparedSceneInstall;
 import cvdexplorer.io.SceneFileIo;
 import cvdexplorer.io.SceneGallery;
 import cvdexplorer.io.SceneJsonException;
@@ -66,7 +68,7 @@ public class AppMain implements Drawing {
     private final CameraSimple camera = new CameraSimple(F_R_R.cutoff01(t -> F_R_R.power(t, 8)));
     private final RasterDiagramRenderer rasterDiagramRenderer = new RasterDiagramRenderer();
     private final SkeletonOverlayRenderer skeletonOverlayRenderer = new SkeletonOverlayRenderer();
-    private final ScenePreparer preparer = new ScenePreparer();
+    private ScenePreparer preparer = new ScenePreparer();
 
     private final double pointRadius = 6.0;
     private final double mouseReach = 10.0;
@@ -107,9 +109,12 @@ public class AppMain implements Drawing {
     private String lastPrintedEditRejection = null;
     /** True after the grid-limit dialog for the current unsupported view. Reset when rendering recovers. */
     private boolean gridLimitWarned = false;
-    private boolean preparationFailureWarned = false;
     private boolean outOfDomainWarned = false;
     private GridLimitKey lastFailedGridKey = null;
+    /** Skips another boundary attempt while the same k-ellipse instances are still installed. */
+    private boolean preparationSkipActive = false;
+    private int failedPreparationIdentity = 0;
+    private Box lastRequiredWorldBounds = null;
 
     private List<Selection> coMovingHandles = List.of();
     private Vector snapTargetPosition = null;
@@ -122,7 +127,6 @@ public class AppMain implements Drawing {
         normalizeClusterCountGadget();
         normalizeSelectedClusterMemberCountGadget();
         state.clampMetricParameter();
-        applyGalleryExampleSelection();
 
         normalizeSelection();
 
@@ -132,6 +136,8 @@ public class AppMain implements Drawing {
         DrawingUtils.clear(view, FxColors.toFx(state.backgroundColor()));
 
         Box requiredWorldBounds = requiredWorldBounds(view);
+        lastRequiredWorldBounds = requiredWorldBounds;
+        applyGalleryExampleSelection(requiredWorldBounds);
         int kEllipseCount = countKEllipses(state.clusters());
         GridLimitKey gridKey = new GridLimitKey(
                 requiredWorldBounds.p().x(),
@@ -140,9 +146,13 @@ public class AppMain implements Drawing {
                 requiredWorldBounds.q().y(),
                 kEllipseCount
         );
+        int memberIdentity = kEllipseIdentity(state.clusters());
         PreparedScene preparedScene = null;
         boolean skipBecauseUnchangedLimit = lastFailedGridKey != null && lastFailedGridKey.equals(gridKey);
-        if (!skipBecauseUnchangedLimit) {
+        boolean skipUnchangedGeometry = preparationSkipActive && failedPreparationIdentity == memberIdentity;
+        if (skipBecauseUnchangedLimit || skipUnchangedGeometry) {
+            preparer.evictAbsent(state.clusters());
+        } else {
             try {
                 preparedScene = preparer.prepare(
                         state.clusters(),
@@ -151,21 +161,20 @@ public class AppMain implements Drawing {
                         state.metricParameter,
                         requiredWorldBounds
                 );
-                lastFailedGridKey = null;
-                gridLimitWarned = false;
-                preparationFailureWarned = false;
+                clearPreparationLatches();
             } catch (DomainLimitExceededException e) {
                 lastFailedGridKey = gridKey;
+                preparationSkipActive = false;
                 if (!gridLimitWarned) {
                     showErrorDialog("K-ellipse grid limit", e.getMessage());
                     gridLimitWarned = true;
                 }
             } catch (KEllipsePreparationException e) {
-                lastFailedGridKey = gridKey;
-                if (!preparationFailureWarned) {
-                    showErrorDialog("K-ellipse preparation failed", e.getMessage());
-                    preparationFailureWarned = true;
-                }
+                lastFailedGridKey = null;
+                gridLimitWarned = false;
+                preparationSkipActive = true;
+                failedPreparationIdentity = memberIdentity;
+                showErrorDialog("K-ellipse preparation failed", e.getMessage());
             }
         }
         if (preparedScene != null && (state.showDiagram || state.showSkeleton)) {
@@ -188,6 +197,28 @@ public class AppMain implements Drawing {
         if (gridLimitWarned && (preparedScene == null)) {
             DrawingUtils.drawInfoText(view, "Zoom in to restore the diagram");
         }
+        if (pendingEditRejection != null) {
+            DrawingUtils.drawInfoText(view, pendingEditRejection);
+        }
+    }
+
+    private void clearPreparationLatches() {
+        lastFailedGridKey = null;
+        gridLimitWarned = false;
+        preparationSkipActive = false;
+        failedPreparationIdentity = 0;
+    }
+
+    private static int kEllipseIdentity(List<ClusterSite> clusters) {
+        int identity = 1;
+        for (ClusterSite cluster : clusters) {
+            for (ClusterMember member : cluster.members()) {
+                if (member instanceof KEllipseMember) {
+                    identity = 31 * identity + System.identityHashCode(member);
+                }
+            }
+        }
+        return identity;
     }
 
     private Box requiredWorldBounds(View view) {
@@ -348,10 +379,7 @@ public class AppMain implements Drawing {
             draggingStartPoint = null;
             coMovingHandles = List.of();
             snapTargetPosition = null;
-            if (pendingEditRejection != null) {
-                queueErrorDialogAfterKeysUp("Invalid k-ellipse", pendingEditRejection);
-                pendingEditRejection = null;
-            }
+            pendingEditRejection = null;
         }
     }
 
@@ -403,6 +431,7 @@ public class AppMain implements Drawing {
                     preparer.validate(kEllipse);
                 } catch (KEllipsePreparationException e) {
                     noteEditRejection(e.getMessage());
+                    preparer.evictAbsent(state.clusters());
                     return;
                 }
             }
@@ -525,7 +554,7 @@ public class AppMain implements Drawing {
             return;
         }
         if (event.isKeyPress(KeyCode.O) && inputState.keyPressed(KeyCode.CONTROL)) {
-            loadSceneFromFile();
+            loadSceneFromFile(view);
             return;
         }
         boolean controlForCamera = inputState.keyPressed(KeyCode.CONTROL) && !ignoreControlModifierForCamera;
@@ -921,7 +950,7 @@ public class AppMain implements Drawing {
         }
     }
 
-    private void applyGalleryExampleSelection() {
+    private void applyGalleryExampleSelection(Box requiredWorldBounds) {
         GalleryExample selected = state.galleryExample;
         if (selected == prevGalleryExample) {
             return;
@@ -932,14 +961,11 @@ public class AppMain implements Drawing {
         }
         try {
             SceneSnapshot snapshot = SceneGallery.loadScene(selected.fileName());
-            state.applyLoadedScene(
-                    snapshot.metricKind(),
-                    snapshot.neighborOrder(),
-                    snapshot.siteMemberKind(),
-                    snapshot.clusters(),
-                    snapshot.metricParameter(),
-                    snapshot.memberParameter()
-            );
+            if (!installPreparedSnapshot(snapshot, requiredWorldBounds, "Examples load failed")) {
+                state.galleryExample = GalleryExample.CURRENT;
+                prevGalleryExample = GalleryExample.CURRENT;
+                return;
+            }
             clearRejectedGadgetAttempts();
             clearSelection();
             state.resetMemberCountGadgetSync();
@@ -972,7 +998,7 @@ public class AppMain implements Drawing {
         }
     }
 
-    private void loadSceneFromFile() {
+    private void loadSceneFromFile(View view) {
         FileChooser chooser = new FileChooser();
         chooser.setTitle("Load scene");
         chooser.getExtensionFilters().add(new FileChooser.ExtensionFilter("JSON scene", "*.json"));
@@ -982,7 +1008,13 @@ public class AppMain implements Drawing {
             return;
         }
         try {
-            SceneFileIo.load(state, file.toPath());
+            SceneSnapshot snapshot = SceneFileIo.read(file.toPath());
+            Box bounds = lastRequiredWorldBounds != null
+                    ? lastRequiredWorldBounds
+                    : requiredWorldBounds(view);
+            if (!installPreparedSnapshot(snapshot, bounds, "Load failed")) {
+                return;
+            }
             state.galleryExample = GalleryExample.CURRENT;
             clearRejectedGadgetAttempts();
             prevGalleryExample = state.galleryExample;
@@ -994,6 +1026,24 @@ public class AppMain implements Drawing {
         } catch (IOException e) {
             showErrorDialog("Load failed", e.getMessage());
             System.err.println("Load failed: " + e.getMessage());
+        }
+    }
+
+    /**
+     * Prepares {@code snapshot} on a new cache. Installs it only when that preparation succeeds,
+     * so a scene that does not fit leaves the current scene and its grids in place.
+     */
+    private boolean installPreparedSnapshot(SceneSnapshot snapshot, Box bounds, String failureHeader) {
+        try {
+            preparer = PreparedSceneInstall.install(
+                    state, snapshot, bounds, DistanceGridLimits.DEFAULT
+            );
+            clearPreparationLatches();
+            return true;
+        } catch (DomainLimitExceededException | KEllipsePreparationException e) {
+            showErrorDialog(failureHeader, e.getMessage());
+            System.err.println(failureHeader + ": " + e.getMessage());
+            return false;
         }
     }
 
