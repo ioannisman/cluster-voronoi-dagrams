@@ -6,6 +6,7 @@ import cvdexplorer.geometry.Vector;
 import cvdexplorer.model.CircleMember;
 import cvdexplorer.model.ClusterMember;
 import cvdexplorer.model.EllipseMember;
+import cvdexplorer.model.KEllipseMember;
 import cvdexplorer.model.LineMember;
 import cvdexplorer.model.PolygonMember;
 import cvdexplorer.model.SegmentMember;
@@ -35,7 +36,8 @@ public final class MemberOverlayRenderer {
             boolean memberSelected,
             int selectedHandleIndex,
             double handleRadiusWorld,
-            double lineWidthWorld
+            double lineWidthWorld,
+            List<Vector> outline
     ) {
         Color edge = activeCluster ? Color.WHITE : Color.gray(0.1, 0.75);
         double lw = (memberSelected ? 4.0 : activeCluster ? 2.5 : 1.5) * lineWidthWorld;
@@ -62,6 +64,10 @@ public final class MemberOverlayRenderer {
             view.setLineWidth(lw);
             view.setStroke(memberSelected ? SELECTION_STROKE : edge);
             strokePolygon(view, pm);
+        } else if (member instanceof KEllipseMember && outline != null) {
+            view.setLineWidth(lw);
+            view.setStroke(memberSelected ? SELECTION_STROKE : edge);
+            strokeClosed(view, outline);
         }
 
         view.setLineWidth(lw);
@@ -70,10 +76,24 @@ public final class MemberOverlayRenderer {
                 continue;
             }
             boolean handleSelected = memberSelected && h == selectedHandleIndex;
-            view.setFill(clusterColor);
-            view.fillCircleCentered(DrawingFxGeometry.toDrawingFx(member.getHandle(h)), handleRadiusWorld);
-            view.setStroke(handleSelected ? SELECTION_STROKE : edge);
-            view.strokeCircleCentered(DrawingFxGeometry.toDrawingFx(member.getHandle(h)), handleRadiusWorld);
+            boolean controlHandle = member instanceof KEllipseMember && h == member.handleCount() - 1;
+            if (controlHandle) {
+                view.setStroke(clusterColor);
+                view.setLineWidth(2.5 * lineWidthWorld);
+                view.strokeCircleCentered(DrawingFxGeometry.toDrawingFx(member.getHandle(h)), handleRadiusWorld);
+                if (handleSelected) {
+                    view.setStroke(SELECTION_STROKE);
+                    view.strokeCircleCentered(
+                            DrawingFxGeometry.toDrawingFx(member.getHandle(h)),
+                            handleRadiusWorld * 1.4
+                    );
+                }
+            } else {
+                view.setFill(clusterColor);
+                view.fillCircleCentered(DrawingFxGeometry.toDrawingFx(member.getHandle(h)), handleRadiusWorld);
+                view.setStroke(handleSelected ? SELECTION_STROKE : edge);
+                view.strokeCircleCentered(DrawingFxGeometry.toDrawingFx(member.getHandle(h)), handleRadiusWorld);
+            }
         }
     }
 
@@ -90,12 +110,15 @@ public final class MemberOverlayRenderer {
     }
 
     private static void strokePolygon(View view, PolygonMember pm) {
-        List<Vector> verts = pm.vertices();
-        if (verts.size() < 2) {
+        strokeClosed(view, pm.vertices());
+    }
+
+    private static void strokeClosed(View view, List<Vector> points) {
+        if (points.size() < 2) {
             return;
         }
-        Vector prev = verts.get(verts.size() - 1);
-        for (Vector point : verts) {
+        Vector prev = points.get(points.size() - 1);
+        for (Vector point : points) {
             view.strokeLineSegment(DrawingFxGeometry.toDrawingFx(prev), DrawingFxGeometry.toDrawingFx(point));
             prev = point;
         }

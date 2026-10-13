@@ -190,4 +190,25 @@ class SceneStateTest {
         assertEquals(2, state.targetPointCountForActiveCluster);
         assertInstanceOf(CircleMember.class, state.clusters().get(0).members().get(1));
     }
+
+    @Test
+    void ensureMemberCountForClusterAddsKEllipse() {
+        ClusterSite cluster = new ClusterSite("A", Rgba.RED, List.of(new PointMember(Vector.xy(0, 0))));
+        SceneState state = new SceneState();
+        state.applyLoadedScene(
+                MetricKind.MINIMUM_DISTANCE,
+                NeighborOrder.NEAREST,
+                SiteMemberKind.K_ELLIPSE,
+                List.of(cluster),
+                1,
+                5
+        );
+        state.targetPointCountForActiveCluster = 2;
+
+        state.ensureMemberCountForCluster(0);
+
+        KEllipseMember added = assertInstanceOf(KEllipseMember.class, state.clusters().get(0).members().get(1));
+        assertEquals(5, added.focusCount());
+        assertEquals(6, added.handleCount());
+    }
 }

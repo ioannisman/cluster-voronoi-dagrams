@@ -1,6 +1,6 @@
 # clusters-voronoi-diagrams
 
-**clusters-voronoi-diagrams-explorer** is an interactive visualization software for Voronoi diagrams. It supports **clusters of sites** (each site is a group of geometric members rather than a single point), **different distance metrics**, and **different input site types** (points, segments, circles, ellipses, and lines).
+**clusters-voronoi-diagrams-explorer** is an interactive visualization software for Voronoi diagrams. It supports **clusters of sites** (each site is a group of geometric members rather than a single point), **different distance metrics**, and **different input site types** (points, segments, circles, ellipses, lines, polygons, and k-ellipses).
 
 ![Cluster Voronoi Diagrams Explorer](docs/figures/instances/cvd_explorer.png)
 

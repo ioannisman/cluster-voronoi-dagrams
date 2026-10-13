@@ -1,18 +1,25 @@
 package cvdexplorer;
 
 import cvdexplorer.core.DiagramRasterizer;
-import cvdexplorer.core.ScenePreparation;
+import cvdexplorer.core.DomainLimitExceededException;
+import cvdexplorer.core.QueryDomainPolicy;
 import cvdexplorer.core.ScenePreparation.PreparedScene;
+import cvdexplorer.core.ScenePreparer;
+import cvdexplorer.field.DistanceGrid2D;
+import cvdexplorer.field.DistanceGridLimits;
 import cvdexplorer.desktop.DrawingFxGeometry;
 import cvdexplorer.desktop.FxColors;
 import cvdexplorer.geometry.Box;
 import cvdexplorer.geometry.Transformation;
 import cvdexplorer.geometry.Vector;
+import cvdexplorer.io.PreparedSceneInstall;
 import cvdexplorer.io.SceneFileIo;
 import cvdexplorer.io.SceneGallery;
 import cvdexplorer.io.SceneJsonException;
+import cvdexplorer.kellipse.KEllipsePreparationException;
 import cvdexplorer.model.ClusterMember;
 import cvdexplorer.model.ClusterSite;
+import cvdexplorer.model.KEllipseMember;
 import cvdexplorer.model.GalleryExample;
 import cvdexplorer.model.SceneState;
 import cvdexplorer.model.SceneSnapshot;
@@ -34,7 +41,9 @@ import javafx.stage.Window;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import xyz.marsavic.drawingfx.application.DrawingApplication;
 import xyz.marsavic.drawingfx.application.Options;
 import xyz.marsavic.drawingfx.drawing.Drawing;
@@ -59,6 +68,7 @@ public class AppMain implements Drawing {
     private final CameraSimple camera = new CameraSimple(F_R_R.cutoff01(t -> F_R_R.power(t, 8)));
     private final RasterDiagramRenderer rasterDiagramRenderer = new RasterDiagramRenderer();
     private final SkeletonOverlayRenderer skeletonOverlayRenderer = new SkeletonOverlayRenderer();
+    private ScenePreparer preparer = new ScenePreparer();
 
     private final double pointRadius = 6.0;
     private final double mouseReach = 10.0;
@@ -95,6 +105,16 @@ public class AppMain implements Drawing {
      */
     private String pendingErrorHeader = null;
     private String pendingErrorMessage = null;
+    private String pendingEditRejection = null;
+    private String lastPrintedEditRejection = null;
+    /** True after the grid-limit dialog for the current unsupported view. Reset when rendering recovers. */
+    private boolean gridLimitWarned = false;
+    private boolean outOfDomainWarned = false;
+    private GridLimitKey lastFailedGridKey = null;
+    /** Skips another boundary attempt while the same k-ellipse instances are still installed. */
+    private boolean preparationSkipActive = false;
+    private int failedPreparationIdentity = 0;
+    private Box lastRequiredWorldBounds = null;
 
     private List<Selection> coMovingHandles = List.of();
     private Vector snapTargetPosition = null;
@@ -107,7 +127,6 @@ public class AppMain implements Drawing {
         normalizeClusterCountGadget();
         normalizeSelectedClusterMemberCountGadget();
         state.clampMetricParameter();
-        applyGalleryExampleSelection();
 
         normalizeSelection();
 
@@ -116,21 +135,126 @@ public class AppMain implements Drawing {
 
         DrawingUtils.clear(view, FxColors.toFx(state.backgroundColor()));
 
-        PreparedScene preparedScene = ScenePreparation.prepare(
-                state.clusters(),
-                state.metricKind,
-                state.neighborOrder,
-                state.metricParameter
+        Box requiredWorldBounds = requiredWorldBounds(view);
+        lastRequiredWorldBounds = requiredWorldBounds;
+        applyGalleryExampleSelection(requiredWorldBounds);
+        int kEllipseCount = countKEllipses(state.clusters());
+        GridLimitKey gridKey = new GridLimitKey(
+                requiredWorldBounds.p().x(),
+                requiredWorldBounds.p().y(),
+                requiredWorldBounds.q().x(),
+                requiredWorldBounds.q().y(),
+                kEllipseCount
         );
-        if (state.showDiagram || state.showSkeleton) {
-            drawDiagram(view, preparedScene);
+        int memberIdentity = kEllipseIdentity(state.clusters());
+        PreparedScene preparedScene = null;
+        boolean skipBecauseUnchangedLimit = lastFailedGridKey != null && lastFailedGridKey.equals(gridKey);
+        boolean skipUnchangedGeometry = preparationSkipActive && failedPreparationIdentity == memberIdentity;
+        if (skipBecauseUnchangedLimit || skipUnchangedGeometry) {
+            preparer.evictAbsent(state.clusters());
+        } else {
+            try {
+                preparedScene = preparer.prepare(
+                        state.clusters(),
+                        state.metricKind,
+                        state.neighborOrder,
+                        state.metricParameter,
+                        requiredWorldBounds
+                );
+                clearPreparationLatches();
+            } catch (DomainLimitExceededException e) {
+                lastFailedGridKey = gridKey;
+                preparationSkipActive = false;
+                if (!gridLimitWarned) {
+                    showErrorDialog("K-ellipse grid limit", e.getMessage());
+                    gridLimitWarned = true;
+                }
+            } catch (KEllipsePreparationException e) {
+                lastFailedGridKey = null;
+                gridLimitWarned = false;
+                preparationSkipActive = true;
+                failedPreparationIdentity = memberIdentity;
+                showErrorDialog("K-ellipse preparation failed", e.getMessage());
+            }
+        }
+        if (preparedScene != null && (state.showDiagram || state.showSkeleton)) {
+            try {
+                drawDiagram(view, preparedScene);
+                outOfDomainWarned = false;
+            } catch (DistanceGrid2D.OutOfDomainException e) {
+                if (!outOfDomainWarned) {
+                    showErrorDialog("K-ellipse query outside the prepared grid", e.getMessage());
+                    outOfDomainWarned = true;
+                }
+            }
         }
         if (state.showMembers) {
-            drawMembers(view, preparedScene);
+            drawMembers(view);
         }
         if (state.showHelp) {
             HelpOverlay.draw(view);
         }
+        if (gridLimitWarned && (preparedScene == null)) {
+            DrawingUtils.drawInfoText(view, "Zoom in to restore the diagram");
+        }
+        if (pendingEditRejection != null) {
+            DrawingUtils.drawInfoText(view, pendingEditRejection);
+        }
+    }
+
+    private void clearPreparationLatches() {
+        lastFailedGridKey = null;
+        gridLimitWarned = false;
+        preparationSkipActive = false;
+        failedPreparationIdentity = 0;
+    }
+
+    private static int kEllipseIdentity(List<ClusterSite> clusters) {
+        int identity = 1;
+        for (ClusterSite cluster : clusters) {
+            for (ClusterMember member : cluster.members()) {
+                if (member instanceof KEllipseMember) {
+                    identity = 31 * identity + System.identityHashCode(member);
+                }
+            }
+        }
+        return identity;
+    }
+
+    private Box requiredWorldBounds(View view) {
+        Box imageBox = DrawingFxGeometry.fromDrawingFx(view.nativeBox().positive()).positive();
+        Transformation tFromPixels = DrawingFxGeometry.fromDrawingFx(view.transformation()).inverse();
+        Vector[] corners = {
+                imageBox.p(),
+                Vector.xy(imageBox.q().x(), imageBox.p().y()),
+                imageBox.q(),
+                Vector.xy(imageBox.p().x(), imageBox.q().y())
+        };
+        double minX = Double.POSITIVE_INFINITY;
+        double minY = Double.POSITIVE_INFINITY;
+        double maxX = Double.NEGATIVE_INFINITY;
+        double maxY = Double.NEGATIVE_INFINITY;
+        for (Vector corner : corners) {
+            Vector world = tFromPixels.applyTo(corner);
+            minX = Math.min(minX, world.x());
+            minY = Math.min(minY, world.y());
+            maxX = Math.max(maxX, world.x());
+            maxY = Math.max(maxY, world.y());
+        }
+        double pad = QueryDomainPolicy.DEFAULT_SPACING;
+        return Box.pq(Vector.xy(minX - pad, minY - pad), Vector.xy(maxX + pad, maxY + pad));
+    }
+
+    private static int countKEllipses(List<ClusterSite> clusters) {
+        int count = 0;
+        for (ClusterSite cluster : clusters) {
+            for (ClusterMember member : cluster.members()) {
+                if (member instanceof KEllipseMember) {
+                    count++;
+                }
+            }
+        }
+        return count;
     }
 
     private void drawDiagram(View view, PreparedScene preparedScene) {
@@ -195,15 +319,18 @@ public class AppMain implements Drawing {
         return new DiagramRasterizer.Classification(ownership.clusterIndex(), ownership.score(), ownership.memberIndex());
     }
 
-    private void drawMembers(View view, PreparedScene preparedScene) {
+    private void drawMembers(View view) {
         double handleR = pointRadius * pixelWidth;
-        for (int clusterIndex = 0; clusterIndex < preparedScene.clusters().size(); clusterIndex++) {
-            ClusterSite cluster = preparedScene.clusters().get(clusterIndex);
+        for (int clusterIndex = 0; clusterIndex < state.clusters().size(); clusterIndex++) {
+            ClusterSite cluster = state.clusters().get(clusterIndex);
             boolean activeCluster = hasSelection() && clusterIndex == selectedClusterIndex;
             for (int memberIndex = 0; memberIndex < cluster.size(); memberIndex++) {
                 ClusterMember member = cluster.members().get(memberIndex);
                 boolean memberSelected = clusterIndex == selectedClusterIndex && memberIndex == selectedMemberIndex;
                 int handleSel = memberSelected ? selectedHandleIndex : -1;
+                List<Vector> outline = member instanceof KEllipseMember kEllipse
+                        ? preparer.outlineFor(kEllipse)
+                        : null;
                 MemberOverlayRenderer.drawMember(
                         view,
                         member,
@@ -212,7 +339,8 @@ public class AppMain implements Drawing {
                         memberSelected,
                         handleSel,
                         handleR,
-                        pixelWidth
+                        pixelWidth,
+                        outline
                 );
             }
         }
@@ -251,6 +379,7 @@ public class AppMain implements Drawing {
             draggingStartPoint = null;
             coMovingHandles = List.of();
             snapTargetPosition = null;
+            pendingEditRejection = null;
         }
     }
 
@@ -265,20 +394,61 @@ public class AppMain implements Drawing {
                 snapTargetPosition = null;
             }
 
-            ClusterSite cluster = state.clusters().get(selectedClusterIndex);
-            ClusterMember member = cluster.members().get(selectedMemberIndex);
-            cluster.setMember(selectedMemberIndex, member.withHandle(selectedHandleIndex, target));
-
-            boolean shiftHeld = inputState.keyPressed(KeyCode.SHIFT);
-            if (!shiftHeld) {
+            List<HandleUpdate> updates = new ArrayList<>();
+            updates.add(new HandleUpdate(selectedClusterIndex, selectedMemberIndex, selectedHandleIndex, target));
+            if (!inputState.keyPressed(KeyCode.SHIFT)) {
                 for (Selection co : coMovingHandles) {
-                    ClusterSite coCluster = state.clusters().get(co.clusterIndex());
-                    ClusterMember coMember = coCluster.members().get(co.memberIndex());
-                    coCluster.setMember(co.memberIndex(), coMember.withHandle(co.handleIndex(), target));
+                    updates.add(new HandleUpdate(co.clusterIndex(), co.memberIndex(), co.handleIndex(), target));
                 }
             }
+            installHandleUpdates(updates);
         } else {
             snapTargetPosition = null;
+        }
+    }
+
+    /**
+     * Applies every proposed handle change to each member, then installs all of them or none.
+     * A k-ellipse is prepared before it is installed. The next mouse move starts again from
+     * the geometry that is still installed.
+     */
+    private void installHandleUpdates(List<HandleUpdate> updates) {
+        Map<Long, List<HandleUpdate>> grouped = new LinkedHashMap<>();
+        for (HandleUpdate update : updates) {
+            long key = (((long) update.clusterIndex()) << 32) | (update.memberIndex() & 0xffffffffL);
+            grouped.computeIfAbsent(key, ignored -> new ArrayList<>()).add(update);
+        }
+        List<HandleInstall> installs = new ArrayList<>();
+        for (List<HandleUpdate> group : grouped.values()) {
+            int clusterIndex = group.get(0).clusterIndex();
+            int memberIndex = group.get(0).memberIndex();
+            ClusterMember next = state.clusters().get(clusterIndex).members().get(memberIndex);
+            for (HandleUpdate update : group) {
+                next = next.withHandle(update.handleIndex(), update.target());
+            }
+            if (next instanceof KEllipseMember kEllipse) {
+                try {
+                    preparer.validate(kEllipse);
+                } catch (KEllipsePreparationException e) {
+                    noteEditRejection(e.getMessage());
+                    preparer.evictAbsent(state.clusters());
+                    return;
+                }
+            }
+            installs.add(new HandleInstall(clusterIndex, memberIndex, next));
+        }
+        for (HandleInstall install : installs) {
+            state.clusters().get(install.clusterIndex()).setMember(install.memberIndex(), install.member());
+        }
+        pendingEditRejection = null;
+        lastPrintedEditRejection = null;
+    }
+
+    private void noteEditRejection(String message) {
+        pendingEditRejection = message;
+        if (!message.equals(lastPrintedEditRejection)) {
+            System.err.println(message);
+            lastPrintedEditRejection = message;
         }
     }
 
@@ -384,7 +554,7 @@ public class AppMain implements Drawing {
             return;
         }
         if (event.isKeyPress(KeyCode.O) && inputState.keyPressed(KeyCode.CONTROL)) {
-            loadSceneFromFile();
+            loadSceneFromFile(view);
             return;
         }
         boolean controlForCamera = inputState.keyPressed(KeyCode.CONTROL) && !ignoreControlModifierForCamera;
@@ -561,6 +731,15 @@ public class AppMain implements Drawing {
     }
 
     private record Selection(int clusterIndex, int memberIndex, int handleIndex) {
+    }
+
+    private record HandleUpdate(int clusterIndex, int memberIndex, int handleIndex, Vector target) {
+    }
+
+    private record HandleInstall(int clusterIndex, int memberIndex, ClusterMember member) {
+    }
+
+    private record GridLimitKey(double minX, double minY, double maxX, double maxY, int kEllipseCount) {
     }
 
     /** FileChooser needs a window; any showing JavaFX window is enough. */
@@ -771,7 +950,7 @@ public class AppMain implements Drawing {
         }
     }
 
-    private void applyGalleryExampleSelection() {
+    private void applyGalleryExampleSelection(Box requiredWorldBounds) {
         GalleryExample selected = state.galleryExample;
         if (selected == prevGalleryExample) {
             return;
@@ -782,14 +961,11 @@ public class AppMain implements Drawing {
         }
         try {
             SceneSnapshot snapshot = SceneGallery.loadScene(selected.fileName());
-            state.applyLoadedScene(
-                    snapshot.metricKind(),
-                    snapshot.neighborOrder(),
-                    snapshot.siteMemberKind(),
-                    snapshot.clusters(),
-                    snapshot.metricParameter(),
-                    snapshot.memberParameter()
-            );
+            if (!installPreparedSnapshot(snapshot, requiredWorldBounds, "Examples load failed")) {
+                state.galleryExample = GalleryExample.CURRENT;
+                prevGalleryExample = GalleryExample.CURRENT;
+                return;
+            }
             clearRejectedGadgetAttempts();
             clearSelection();
             state.resetMemberCountGadgetSync();
@@ -822,7 +998,7 @@ public class AppMain implements Drawing {
         }
     }
 
-    private void loadSceneFromFile() {
+    private void loadSceneFromFile(View view) {
         FileChooser chooser = new FileChooser();
         chooser.setTitle("Load scene");
         chooser.getExtensionFilters().add(new FileChooser.ExtensionFilter("JSON scene", "*.json"));
@@ -832,7 +1008,13 @@ public class AppMain implements Drawing {
             return;
         }
         try {
-            SceneFileIo.load(state, file.toPath());
+            SceneSnapshot snapshot = SceneFileIo.read(file.toPath());
+            Box bounds = lastRequiredWorldBounds != null
+                    ? lastRequiredWorldBounds
+                    : requiredWorldBounds(view);
+            if (!installPreparedSnapshot(snapshot, bounds, "Load failed")) {
+                return;
+            }
             state.galleryExample = GalleryExample.CURRENT;
             clearRejectedGadgetAttempts();
             prevGalleryExample = state.galleryExample;
@@ -844,6 +1026,24 @@ public class AppMain implements Drawing {
         } catch (IOException e) {
             showErrorDialog("Load failed", e.getMessage());
             System.err.println("Load failed: " + e.getMessage());
+        }
+    }
+
+    /**
+     * Prepares {@code snapshot} on a new cache. Installs it only when that preparation succeeds,
+     * so a scene that does not fit leaves the current scene and its grids in place.
+     */
+    private boolean installPreparedSnapshot(SceneSnapshot snapshot, Box bounds, String failureHeader) {
+        try {
+            preparer = PreparedSceneInstall.install(
+                    state, snapshot, bounds, DistanceGridLimits.DEFAULT
+            );
+            clearPreparationLatches();
+            return true;
+        } catch (DomainLimitExceededException | KEllipsePreparationException e) {
+            showErrorDialog(failureHeader, e.getMessage());
+            System.err.println(failureHeader + ": " + e.getMessage());
+            return false;
         }
     }
 

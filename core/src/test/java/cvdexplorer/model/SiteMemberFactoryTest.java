@@ -2,6 +2,8 @@ package cvdexplorer.model;
 
 import org.junit.jupiter.api.Test;
 import cvdexplorer.geometry.Vector;
+import cvdexplorer.kellipse.KEllipseApproximationSettings;
+import cvdexplorer.kellipse.KEllipseBoundaryBuilder;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
@@ -65,6 +67,24 @@ class SiteMemberFactoryTest {
         Vector c = p.placementCentroid();
         assertEquals(HINT.x(), c.x(), 1e-6);
         assertEquals(HINT.y(), c.y(), 1e-6);
+    }
+
+    @Test
+    void kEllipseUsesMemberParameterAsFocusCount() throws Exception {
+        ClusterMember m = SiteMemberFactory.createDefault(SiteMemberKind.K_ELLIPSE, 1, 2, HINT, 5);
+        KEllipseMember ellipse = assertInstanceOf(KEllipseMember.class, m);
+        assertEquals(5, ellipse.focusCount());
+        assertEquals(6, ellipse.handleCount());
+        assertEquals(HINT.x(), ellipse.placementCentroid().x(), 1e-6);
+        assertEquals(HINT.y(), ellipse.placementCentroid().y(), 1e-6);
+        new KEllipseBoundaryBuilder(KEllipseApproximationSettings.DEFAULT).build(ellipse);
+    }
+
+    @Test
+    void kEllipseFocusCountIsClampedToThree() {
+        ClusterMember m = SiteMemberFactory.createDefault(SiteMemberKind.K_ELLIPSE, 0, 0, HINT, 1);
+        KEllipseMember ellipse = assertInstanceOf(KEllipseMember.class, m);
+        assertEquals(3, ellipse.focusCount());
     }
 
     @Test

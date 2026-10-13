@@ -17,9 +17,12 @@ public final class SceneFileIo {
         Files.writeString(path, SceneJsonCodec.encode(state.toSnapshot()), StandardCharsets.UTF_8);
     }
 
+    public static SceneSnapshot read(Path path) throws IOException, SceneJsonException {
+        return SceneJsonCodec.parse(Files.readString(path, StandardCharsets.UTF_8));
+    }
+
     public static void load(SceneState state, Path path) throws IOException, SceneJsonException {
-        String json = Files.readString(path, StandardCharsets.UTF_8);
-        SceneSnapshot snapshot = SceneJsonCodec.parse(json);
+        SceneSnapshot snapshot = read(path);
         state.applyLoadedScene(
                 snapshot.metricKind(),
                 snapshot.neighborOrder(),
