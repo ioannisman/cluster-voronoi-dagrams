@@ -6,6 +6,7 @@ import cvdexplorer.model.CircleMember;
 import cvdexplorer.model.ClusterMember;
 import cvdexplorer.model.ClusterSite;
 import cvdexplorer.model.EllipseMember;
+import cvdexplorer.model.KEllipseMember;
 import cvdexplorer.model.LineMember;
 import cvdexplorer.model.NeighborOrder;
 import cvdexplorer.model.PointMember;
@@ -166,6 +167,19 @@ public final class SceneFileFormat {
                         mj.ys[i] = verts.get(i).y();
                     }
                     members.add(mj);
+                } else if (member instanceof KEllipseMember km) {
+                    MemberJson mj = new MemberJson();
+                    mj.kind = "K_ELLIPSE";
+                    List<Vector> foci = km.foci();
+                    mj.xs = new double[foci.size()];
+                    mj.ys = new double[foci.size()];
+                    for (int i = 0; i < foci.size(); i++) {
+                        mj.xs[i] = foci.get(i).x();
+                        mj.ys[i] = foci.get(i).y();
+                    }
+                    mj.hx = km.controlHandle().x();
+                    mj.hy = km.controlHandle().y();
+                    members.add(mj);
                 }
             }
             Rgba c = site.color();
@@ -257,6 +271,7 @@ public final class SceneFileFormat {
                     out.add(new LineMember(Vector.xy(mj.px, mj.py), Vector.xy(mj.qx, mj.qy)));
                 }
                 case "POLYGON" -> out.add(parsePolygon(mj, clusterName));
+                case "K_ELLIPSE" -> out.add(parseKEllipse(mj, clusterName, out.size()));
                 default -> throw new SceneJsonException("Unknown member kind: " + mj.kind + " in cluster " + clusterName);
             }
         }
@@ -275,6 +290,37 @@ public final class SceneFileFormat {
                 Vector.xy(mj.bx, mj.by),
                 Vector.xy(mj.hx, mj.hy)
         );
+    }
+
+    private static KEllipseMember parseKEllipse(MemberJson mj, String clusterName, int memberIndex) throws SceneJsonException {
+        if (mj.xs == null || mj.ys == null || mj.hx == null || mj.hy == null) {
+            throw new SceneJsonException(
+                    "K_ELLIPSE member requires xs, ys, hx, hy in cluster " + clusterName
+            );
+        }
+        if (mj.xs.length != mj.ys.length) {
+            throw new SceneJsonException("K_ELLIPSE member xs and ys length mismatch in cluster " + clusterName);
+        }
+        if (mj.xs.length < SceneLimits.MIN_KELLIPSE_FOCI || mj.xs.length > SceneLimits.MAX_KELLIPSE_FOCI) {
+            throw new SceneJsonException(
+                    "K_ELLIPSE member #" + memberIndex + " in cluster " + clusterName
+                            + " requires between " + SceneLimits.MIN_KELLIPSE_FOCI
+                            + " and " + SceneLimits.MAX_KELLIPSE_FOCI + " foci"
+            );
+        }
+        List<Vector> foci = new ArrayList<>(mj.xs.length);
+        for (int i = 0; i < mj.xs.length; i++) {
+            foci.add(Vector.xy(mj.xs[i], mj.ys[i]));
+        }
+        KEllipseMember member;
+        try {
+            member = new KEllipseMember(foci, Vector.xy(mj.hx, mj.hy));
+        } catch (IllegalArgumentException e) {
+            throw new SceneJsonException(
+                    "K_ELLIPSE member #" + memberIndex + " in cluster " + clusterName + " is invalid: " + e.getMessage()
+            );
+        }
+        return member;
     }
 
     private static PolygonMember parsePolygon(MemberJson mj, String clusterName) throws SceneJsonException {

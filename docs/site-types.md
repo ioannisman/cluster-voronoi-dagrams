@@ -2,7 +2,7 @@
 
 [← Documentation home](README.md)
 
-Members in a cluster can be `POINT`, `LINE_SEGMENT`, `CIRCLE`, `ELLIPSE`, `LINE`, or `POLYGON`.
+Members in a cluster can be `POINT`, `LINE_SEGMENT`, `CIRCLE`, `ELLIPSE`, `LINE`, `POLYGON`, or `K_ELLIPSE`.
 
 Open polygonal chains can still be built from `LINE_SEGMENT` members; use **`Snap to handles`** to weld segment endpoints if needed. Closed polygons should use the `POLYGON` member type.
 
@@ -89,3 +89,17 @@ Figures where each cluster uses **circle** members (`CIRCLE`) follow.
 ## Ellipses (2-ellipses)
 
 A classic **ellipse** has two foci \(f_1,f_2\) and constant \(c\). Its boundary is the set of points where \(d(p,f_1)+d(p,f_2)=c\). The distance from a query point to the member is the **Euclidean distance to that boundary** (computed analytically). The constant \(c\) is set by a control handle \(h\) on the curve: \(c = d(h,f_1)+d(h,f_2)\).
+
+## K-ellipses
+
+A `K_ELLIPSE` member has three or more foci \(f_1,\ldots,f_n\) and one control handle \(h\). The curve is the level set
+
+\[
+F(y) = \sum_i \|y - f_i\| = c, \qquad c = F(h).
+\]
+
+The distance from a query point to the member is the Euclidean distance to that curve, both inside and outside. The foci are part of this one member; they are not extra members for sum, mean, or \(k\)-th nearest.
+
+The curve handle is drawn as a ring and stays visible when the member is not selected. Focus handles appear after the member is selected. **Member parameter** sets how many foci the next created k-ellipse has (3 to 16), the same gadget that sets a new polygon's vertex count.
+
+The distance used while drawing the diagram is an approximation: the curve is sampled as a closed polyline, and queries read a signed-distance grid of that polyline. Details, defaults, and limits are in [K-ellipse distance grid](k-ellipse-distance-grid.md).

@@ -9,7 +9,8 @@ import cvdexplorer.io.SceneGallery;
 public enum GalleryExample {
     /** Placeholder: leave the live scene unchanged (startup / after arbitrary Ctrl+O). */
     CURRENT(null),
-    DEFAULT_CVD("default_cvd.json");
+    DEFAULT_CVD("default_cvd.json"),
+    K_ELLIPSES("k_ellipses.json");
 
     private final String fileName;
 

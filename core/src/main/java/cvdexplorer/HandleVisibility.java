@@ -3,6 +3,7 @@ package cvdexplorer;
 import cvdexplorer.model.CircleMember;
 import cvdexplorer.model.ClusterMember;
 import cvdexplorer.model.EllipseMember;
+import cvdexplorer.model.KEllipseMember;
 import cvdexplorer.model.LineMember;
 
 public final class HandleVisibility {
@@ -20,11 +21,17 @@ public final class HandleVisibility {
         if (member instanceof EllipseMember) {
             return 2;
         }
+        if (member instanceof KEllipseMember kEllipse) {
+            return kEllipse.focusCount();
+        }
         return 0;
     }
 
     public static boolean isVisible(ClusterMember member, int handleIndex, boolean memberSelected) {
-        if (member instanceof CircleMember || member instanceof EllipseMember || member instanceof LineMember) {
+        if (member instanceof CircleMember
+                || member instanceof EllipseMember
+                || member instanceof KEllipseMember
+                || member instanceof LineMember) {
             return handleIndex == primaryHandleIndex(member) || memberSelected;
         }
         return true;

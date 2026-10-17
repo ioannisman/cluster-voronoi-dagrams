@@ -2,10 +2,13 @@ package cvdexplorer;
 
 import cvdexplorer.model.CircleMember;
 import cvdexplorer.model.EllipseMember;
+import cvdexplorer.model.KEllipseMember;
 import cvdexplorer.model.LineMember;
 import cvdexplorer.model.PointMember;
 import org.junit.jupiter.api.Test;
 import cvdexplorer.geometry.Vector;
+
+import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -39,6 +42,22 @@ class HandleVisibilityTest {
         assertTrue(HandleVisibility.isVisible(ellipse, 0, true));
         assertTrue(HandleVisibility.isVisible(ellipse, 1, true));
         assertTrue(HandleVisibility.isVisible(ellipse, 2, true));
+    }
+
+    @Test
+    void kEllipseShowsControlHandleUntilSelectedThenAll() {
+        KEllipseMember ellipse = new KEllipseMember(
+                List.of(Vector.xy(-4, 0), Vector.xy(0, 3), Vector.xy(4, -1)),
+                Vector.xy(0, 8)
+        );
+
+        assertEquals(3, HandleVisibility.primaryHandleIndex(ellipse));
+        assertFalse(HandleVisibility.isVisible(ellipse, 0, false));
+        assertFalse(HandleVisibility.isVisible(ellipse, 1, false));
+        assertFalse(HandleVisibility.isVisible(ellipse, 2, false));
+        assertTrue(HandleVisibility.isVisible(ellipse, 3, false));
+        assertTrue(HandleVisibility.isVisible(ellipse, 0, true));
+        assertTrue(HandleVisibility.isVisible(ellipse, 3, true));
     }
 
     @Test

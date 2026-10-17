@@ -6,6 +6,7 @@ import cvdexplorer.metric.MetricKind;
 import cvdexplorer.model.CircleMember;
 import cvdexplorer.model.ClusterSite;
 import cvdexplorer.model.EllipseMember;
+import cvdexplorer.model.KEllipseMember;
 import cvdexplorer.model.LineMember;
 import cvdexplorer.model.NeighborOrder;
 import cvdexplorer.model.PointMember;
@@ -18,7 +19,10 @@ import cvdexplorer.model.SiteMemberKind;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
+import cvdexplorer.field.DistanceGridLimits;
+import cvdexplorer.geometry.Box;
 import cvdexplorer.geometry.Vector;
+import cvdexplorer.kellipse.KEllipsePreparationException;
 
 import java.util.List;
 
@@ -430,5 +434,94 @@ class SceneJsonCodecTest {
                 """;
         SceneJsonException ex = assertThrows(SceneJsonException.class, () -> SceneJsonCodec.parse(json));
         assertTrue(ex.getMessage().contains("metricParameter"));
+    }
+
+    @Test
+    void encodeDecodeRoundTripPreservesKEllipseGeometry() throws Exception {
+        KEllipseMember ellipse = new KEllipseMember(
+                List.of(Vector.xy(-4, 0), Vector.xy(0, 3), Vector.xy(4, -1)),
+                Vector.xy(0, 8)
+        );
+        SceneSnapshot source = new SceneSnapshot();
+        source.setMetricKind(MetricKind.MINIMUM_DISTANCE);
+        source.setNeighborOrder(NeighborOrder.NEAREST);
+        source.setSiteMemberKind(SiteMemberKind.K_ELLIPSE);
+        source.setMemberParameter(4);
+        source.setClusters(List.of(new ClusterSite("Cedar", Rgba.RED, List.of(ellipse, new PointMember(Vector.xy(1, 2))))));
+
+        String json = SceneJsonCodec.encode(source);
+        assertTrue(json.contains("\"kind\": \"K_ELLIPSE\""));
+        assertTrue(!json.contains("polyline"));
+        SceneSnapshot parsed = SceneJsonCodec.parse(json);
+        assertEquals(SiteMemberKind.K_ELLIPSE, parsed.siteMemberKind());
+        KEllipseMember restored = assertInstanceOf(KEllipseMember.class, parsed.clusters().get(0).members().get(0));
+        assertEquals(3, restored.focusCount());
+        assertEquals(-4.0, restored.getHandle(0).x(), 1e-9);
+        assertEquals(3.0, restored.getHandle(1).y(), 1e-9);
+        assertEquals(0.0, restored.controlHandle().x(), 1e-9);
+        assertEquals(8.0, restored.controlHandle().y(), 1e-9);
+        assertEquals(ellipse.level(), restored.level(), 1e-9);
+        assertInstanceOf(PointMember.class, parsed.clusters().get(0).members().get(1));
+    }
+
+    @Test
+    void rejectsDegenerateKEllipseFile() throws Exception {
+        String json = """
+                {
+                  "version": "1",
+                  "metricKind": "MINIMUM_DISTANCE",
+                  "siteMemberKind": "K_ELLIPSE",
+                  "clusters": [
+                    {
+                      "name": "Cedar",
+                      "color": {"r": 0.2, "g": 0.4, "b": 0.6, "opacity": 1.0},
+                      "members": [
+                        {"kind": "K_ELLIPSE", "xs": [-1.0, 0.0, 1.0], "ys": [0.0, 0.0, 0.0], "hx": 0.0, "hy": 0.0}
+                      ]
+                    }
+                  ]
+                }
+                """;
+        SceneSnapshot parsed = SceneJsonCodec.parse(json);
+        assertInstanceOf(KEllipseMember.class, parsed.clusters().get(0).members().get(0));
+
+        SceneState state = new SceneState();
+        state.clusters().add(new ClusterSite("Keep", Rgba.RED, List.of(new PointMember(Vector.xy(1, 2)))));
+        KEllipsePreparationException ex = assertThrows(
+                KEllipsePreparationException.class,
+                () -> PreparedSceneInstall.install(
+                        state,
+                        parsed,
+                        Box.pq(Vector.xy(-40, -40), Vector.xy(40, 40)),
+                        DistanceGridLimits.DEFAULT
+                )
+        );
+        assertTrue(ex.getMessage().contains("Cedar"));
+        assertTrue(ex.getMessage().contains("cannot be prepared"));
+        assertEquals("Keep", state.clusters().get(0).name());
+        assertInstanceOf(PointMember.class, state.clusters().get(0).members().get(0));
+    }
+
+    @Test
+    void rejectsKEllipseWithFewerThanThreeFoci() {
+        String json = """
+                {
+                  "version": "1",
+                  "metricKind": "MINIMUM_DISTANCE",
+                  "siteMemberKind": "POINT",
+                  "clusters": [
+                    {
+                      "name": "Cedar",
+                      "color": {"r": 0.2, "g": 0.4, "b": 0.6, "opacity": 1.0},
+                      "members": [
+                        {"kind": "K_ELLIPSE", "xs": [0.0, 1.0], "ys": [0.0, 0.0], "hx": 0.0, "hy": 5.0}
+                      ]
+                    }
+                  ]
+                }
+                """;
+        SceneJsonException ex = assertThrows(SceneJsonException.class, () -> SceneJsonCodec.parse(json));
+        assertTrue(ex.getMessage().contains("Cedar"));
+        assertTrue(ex.getMessage().contains("foci"));
     }
 }
