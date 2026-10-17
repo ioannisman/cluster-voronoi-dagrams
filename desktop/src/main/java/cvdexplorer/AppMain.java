@@ -363,11 +363,9 @@ public class AppMain implements Drawing {
 
     private void updateSelectionStart(InputEvent event, Vector pointerWorld) {
         if (!dragging && event.isMouseButtonPress(1)) {
-            Selection selection = nearestHandle(pointerWorld, mouseReach * pixelWidth);
-            if (selection == null) {
-                clearSelection();
-                coMovingHandles = List.of();
-            } else {
+            double reach = mouseReach * pixelWidth;
+            Selection selection = nearestHandle(pointerWorld, reach);
+            if (selection != null) {
                 selectedClusterIndex = selection.clusterIndex();
                 selectedMemberIndex = selection.memberIndex();
                 selectedHandleIndex = selection.handleIndex();
@@ -377,6 +375,15 @@ public class AppMain implements Drawing {
                 draggingStartPoint = pointerWorld;
                 coMovingHandles = findColocatedHandles(
                         selectedClusterIndex, selectedMemberIndex, selectedHandleIndex);
+            } else {
+                MemberHit stroke = nearestStroke(pointerWorld, reach);
+                if (stroke == null) {
+                    clearSelection();
+                } else {
+                    selectMember(stroke.clusterIndex(), stroke.memberIndex());
+                    draggingStartPoint = null;
+                    coMovingHandles = List.of();
+                }
             }
         }
     }
@@ -596,7 +603,7 @@ public class AppMain implements Drawing {
                 ClusterMember member = cluster.members().get(memberIndex);
                 boolean memberSelected = clusterIndex == selectedClusterIndex && memberIndex == selectedMemberIndex;
                 for (int h = 0; h < member.handleCount(); h++) {
-                    if (!HandleVisibility.isVisible(member, h, memberSelected)) {
+                    if (!handleVisible(member, h, memberSelected)) {
                         continue;
                     }
                     double distance = member.getHandle(h).distanceTo(pointerWorld);
@@ -611,6 +618,46 @@ public class AppMain implements Drawing {
         return best;
     }
 
+    /** Nearest drawn stroke within reach. A visible handle is chosen before this. */
+    private MemberHit nearestStroke(Vector pointerWorld, double radiusLimit) {
+        MemberHit best = null;
+        double bestDistance = Double.POSITIVE_INFINITY;
+
+        for (int clusterIndex = 0; clusterIndex < state.clusterCount(); clusterIndex++) {
+            ClusterSite cluster = state.clusters().get(clusterIndex);
+            for (int memberIndex = 0; memberIndex < cluster.size(); memberIndex++) {
+                ClusterMember member = cluster.members().get(memberIndex);
+                List<Vector> outline = strokeOutline(member);
+                double distance = MemberStroke.distanceTo(member, pointerWorld, outline);
+                if (distance < bestDistance && distance < radiusLimit) {
+                    bestDistance = distance;
+                    best = new MemberHit(clusterIndex, memberIndex);
+                }
+            }
+        }
+
+        return best;
+    }
+
+    private boolean handleVisible(ClusterMember member, int handleIndex, boolean memberSelected) {
+        return HandleVisibility.isVisible(
+                member,
+                handleIndex,
+                memberSelected,
+                MemberStroke.isDrawn(member, strokeOutline(member))
+        );
+    }
+
+    private List<Vector> strokeOutline(ClusterMember member) {
+        if (member instanceof KEllipseMember kEllipse) {
+            return preparer.outlineFor(kEllipse);
+        }
+        return null;
+    }
+
+    /**
+     * Hidden handles stay eligible. Snap is how endpoints of unselected segments weld together.
+     */
     private Vector snapToNearestHandle(Vector position, double snapRadius,
             int excludeCluster, int excludeMember, int excludeHandle) {
         double bestDistance = Double.POSITIVE_INFINITY;
@@ -620,12 +667,8 @@ public class AppMain implements Drawing {
             ClusterSite cluster = state.clusters().get(ci);
             for (int mi = 0; mi < cluster.size(); mi++) {
                 ClusterMember member = cluster.members().get(mi);
-                boolean memberSelected = ci == selectedClusterIndex && mi == selectedMemberIndex;
                 for (int h = 0; h < member.handleCount(); h++) {
                     if (ci == excludeCluster && mi == excludeMember && h == excludeHandle) {
-                        continue;
-                    }
-                    if (!HandleVisibility.isVisible(member, h, memberSelected)) {
                         continue;
                     }
                     Vector handlePos = member.getHandle(h);
@@ -641,6 +684,9 @@ public class AppMain implements Drawing {
         return bestPosition != null ? bestPosition : position;
     }
 
+    /**
+     * Hidden handles stay eligible, so a welded endpoint keeps moving with the one being dragged.
+     */
     private List<Selection> findColocatedHandles(int clusterIndex, int memberIndex, int handleIndex) {
         ClusterSite cluster = state.clusters().get(clusterIndex);
         Vector position = cluster.members().get(memberIndex).getHandle(handleIndex);
@@ -648,12 +694,8 @@ public class AppMain implements Drawing {
 
         for (int mi = 0; mi < cluster.size(); mi++) {
             ClusterMember member = cluster.members().get(mi);
-            boolean memberSelected = clusterIndex == selectedClusterIndex && mi == selectedMemberIndex;
             for (int h = 0; h < member.handleCount(); h++) {
                 if (mi == memberIndex && h == handleIndex) {
-                    continue;
-                }
-                if (!HandleVisibility.isVisible(member, h, memberSelected)) {
                     continue;
                 }
                 if (member.getHandle(h).equals(position)) {
@@ -743,6 +785,9 @@ public class AppMain implements Drawing {
     }
 
     private record Selection(int clusterIndex, int memberIndex, int handleIndex) {
+    }
+
+    private record MemberHit(int clusterIndex, int memberIndex) {
     }
 
     private record HandleUpdate(int clusterIndex, int memberIndex, int handleIndex, Vector target) {

@@ -100,6 +100,6 @@ F(y) = \sum_i \|y - f_i\| = c, \qquad c = F(h).
 
 The distance from a query point to the member is the Euclidean distance to that curve, both inside and outside. The foci are part of this one member; they are not extra members for sum, mean, or \(k\)-th nearest.
 
-The curve handle is drawn as a ring and stays visible when the member is not selected. Focus handles appear after the member is selected. **Member parameter** sets how many foci the next created k-ellipse has (3 to 16), the same gadget that sets a new polygon's vertex count.
+Handles stay hidden until the member is selected. **Member parameter** sets how many foci the next created k-ellipse has (3 to 16), the same gadget that sets a new polygon's vertex count.
 
 The distance used while drawing the diagram is an approximation: the curve is sampled as a closed polyline, and queries read a signed-distance grid of that polyline. Details, defaults, and limits are in [K-ellipse distance grid](k-ellipse-distance-grid.md).

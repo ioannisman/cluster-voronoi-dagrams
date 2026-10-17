@@ -4,15 +4,15 @@ import cvdexplorer.model.CircleMember;
 import cvdexplorer.model.ClusterMember;
 import cvdexplorer.model.EllipseMember;
 import cvdexplorer.model.KEllipseMember;
-import cvdexplorer.model.LineMember;
+import cvdexplorer.model.PointMember;
 
 public final class HandleVisibility {
     private HandleVisibility() {
     }
 
     /**
-     * Handle shown even when the member is not selected (curve control for circle/ellipse;
-     * first endpoint for lines). Returns {@code 0} for types that show all handles.
+     * Handle marked current when the member is selected from the keyboard or from its stroke.
+     * The curve control for a circle or ellipse, the control handle of a k-ellipse, otherwise the first handle.
      */
     public static int primaryHandleIndex(ClusterMember member) {
         if (member instanceof CircleMember) {
@@ -27,13 +27,20 @@ public final class HandleVisibility {
         return 0;
     }
 
-    public static boolean isVisible(ClusterMember member, int handleIndex, boolean memberSelected) {
-        if (member instanceof CircleMember
-                || member instanceof EllipseMember
-                || member instanceof KEllipseMember
-                || member instanceof LineMember) {
-            return handleIndex == primaryHandleIndex(member) || memberSelected;
+    /**
+     * A point handle is always shown. Every other handle is shown when the member is selected,
+     * or when {@code strokeDrawn} is false because the member has no stroke to click.
+     * Handles of one member share this answer.
+     */
+    public static boolean isVisible(
+            ClusterMember member,
+            int handleIndex,
+            boolean memberSelected,
+            boolean strokeDrawn
+    ) {
+        if (member instanceof PointMember) {
+            return handleIndex == 0;
         }
-        return true;
+        return memberSelected || !strokeDrawn;
     }
 }

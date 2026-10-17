@@ -1,6 +1,7 @@
 package cvdexplorer.render;
 
 import cvdexplorer.HandleVisibility;
+import cvdexplorer.MemberStroke;
 import cvdexplorer.desktop.DrawingFxGeometry;
 import cvdexplorer.geometry.Vector;
 import cvdexplorer.model.CircleMember;
@@ -22,8 +23,11 @@ import java.util.List;
  */
 public final class MemberOverlayRenderer {
     private static final Color SNAP_INDICATOR_COLOR = Color.hsb(60, 0.9, 1.0, 0.8);
-    /** Stroke for the selected member’s segment and its active handle (distinct from snap yellow and white edges). */
+    /** Stroke for the selected member and its active handle, distinct from the snap indicator. */
     private static final Color SELECTION_STROKE = Color.hsb(265, 0.88, 0.52);
+    /** Dark line under a cluster-colored stroke so the site stays visible on a region of the same color. */
+    private static final Color STROKE_UNDERLAY = Color.gray(0.08, 0.95);
+    private static final double UNDERLAY_EXTRA_PIXELS = 2.0;
 
     private MemberOverlayRenderer() {
     }
@@ -39,66 +43,52 @@ public final class MemberOverlayRenderer {
             double lineWidthWorld,
             List<Vector> outline
     ) {
-        Color edge = activeCluster ? Color.WHITE : Color.gray(0.1, 0.75);
-        double lw = (memberSelected ? 4.0 : activeCluster ? 2.5 : 1.5) * lineWidthWorld;
+        double handleLineWidth = (memberSelected ? 4.0 : activeCluster ? 2.5 : 1.5) * lineWidthWorld;
+        double lw = handleLineWidth + lineWidthWorld;
+        Color stroke = memberSelected ? SELECTION_STROKE : clusterColor;
+        List<Vector> ellipseBoundary = member instanceof EllipseMember ellipse ? ellipse.boundaryPolyline() : null;
+        strokeGeometry(view, member, outline, ellipseBoundary, STROKE_UNDERLAY, lw + UNDERLAY_EXTRA_PIXELS * lineWidthWorld);
+        strokeGeometry(view, member, outline, ellipseBoundary, stroke, lw);
 
-        if (member instanceof SegmentMember sm) {
-            view.setLineWidth(lw);
-            view.setStroke(memberSelected ? SELECTION_STROKE : edge);
-            view.strokeLineSegment(DrawingFxGeometry.toDrawingFx(sm.a()), DrawingFxGeometry.toDrawingFx(sm.b()));
-        } else if (member instanceof CircleMember cm) {
-            view.setLineWidth(lw);
-            view.setStroke(memberSelected ? SELECTION_STROKE : edge);
-            view.strokeCircleCentered(DrawingFxGeometry.toDrawingFx(cm.center()), cm.radius());
-        } else if (member instanceof EllipseMember em) {
-            view.setLineWidth(lw);
-            view.setStroke(memberSelected ? SELECTION_STROKE : edge);
-            strokeClosed(view, em.boundaryPolyline());
-        } else if (member instanceof LineMember lm) {
-            view.setLineWidth(lw);
-            view.setStroke(memberSelected ? SELECTION_STROKE : edge);
-            if (lm.b().sub(lm.a()).lengthSquared() > 0.0) {
-                view.strokeLine(Line.pq(DrawingFxGeometry.toDrawingFx(lm.a()), DrawingFxGeometry.toDrawingFx(lm.b())));
-            }
-        } else if (member instanceof PolygonMember pm) {
-            view.setLineWidth(lw);
-            view.setStroke(memberSelected ? SELECTION_STROKE : edge);
-            strokePolygon(view, pm);
-        } else if (member instanceof KEllipseMember && outline != null) {
-            view.setLineWidth(lw);
-            view.setStroke(memberSelected ? SELECTION_STROKE : edge);
-            strokeClosed(view, outline);
-        }
-
-        view.setLineWidth(lw);
+        view.setLineWidth(handleLineWidth);
+        boolean strokeDrawn = MemberStroke.isDrawn(member, outline);
         for (int h = 0; h < member.handleCount(); h++) {
-            if (!HandleVisibility.isVisible(member, h, memberSelected)) {
+            if (!HandleVisibility.isVisible(member, h, memberSelected, strokeDrawn)) {
                 continue;
             }
             boolean handleSelected = memberSelected && h == selectedHandleIndex;
-            boolean controlHandle = member instanceof KEllipseMember && h == member.handleCount() - 1;
-            if (controlHandle) {
-                view.setStroke(clusterColor);
-                view.setLineWidth(2.5 * lineWidthWorld);
-                view.strokeCircleCentered(DrawingFxGeometry.toDrawingFx(member.getHandle(h)), handleRadiusWorld);
-                if (handleSelected) {
-                    view.setStroke(SELECTION_STROKE);
-                    view.strokeCircleCentered(
-                            DrawingFxGeometry.toDrawingFx(member.getHandle(h)),
-                            handleRadiusWorld * 1.4
-                    );
-                }
-            } else {
-                view.setFill(clusterColor);
-                view.fillCircleCentered(DrawingFxGeometry.toDrawingFx(member.getHandle(h)), handleRadiusWorld);
-                view.setStroke(handleSelected ? SELECTION_STROKE : edge);
-                view.strokeCircleCentered(DrawingFxGeometry.toDrawingFx(member.getHandle(h)), handleRadiusWorld);
-            }
+            view.setFill(clusterColor);
+            view.fillCircleCentered(DrawingFxGeometry.toDrawingFx(member.getHandle(h)), handleRadiusWorld);
+            view.setStroke(handleSelected ? SELECTION_STROKE : STROKE_UNDERLAY);
+            view.strokeCircleCentered(DrawingFxGeometry.toDrawingFx(member.getHandle(h)), handleRadiusWorld);
         }
     }
 
-    private static void strokePolygon(View view, PolygonMember pm) {
-        strokeClosed(view, pm.vertices());
+    private static void strokeGeometry(
+            View view,
+            ClusterMember member,
+            List<Vector> outline,
+            List<Vector> ellipseBoundary,
+            Color color,
+            double width
+    ) {
+        view.setLineWidth(width);
+        view.setStroke(color);
+        if (member instanceof SegmentMember segment) {
+            view.strokeLineSegment(DrawingFxGeometry.toDrawingFx(segment.a()), DrawingFxGeometry.toDrawingFx(segment.b()));
+        } else if (member instanceof CircleMember circle) {
+            view.strokeCircleCentered(DrawingFxGeometry.toDrawingFx(circle.center()), circle.radius());
+        } else if (member instanceof EllipseMember) {
+            strokeClosed(view, ellipseBoundary);
+        } else if (member instanceof LineMember line) {
+            if (line.b().sub(line.a()).lengthSquared() > 0.0) {
+                view.strokeLine(Line.pq(DrawingFxGeometry.toDrawingFx(line.a()), DrawingFxGeometry.toDrawingFx(line.b())));
+            }
+        } else if (member instanceof PolygonMember polygon) {
+            strokeClosed(view, polygon.vertices());
+        } else if (member instanceof KEllipseMember && outline != null) {
+            strokeClosed(view, outline);
+        }
     }
 
     private static void strokeClosed(View view, List<Vector> points) {
