@@ -1,7 +1,5 @@
 package cvdexplorer.field;
 
-import cvdexplorer.instrument.Counters;
-
 /**
  * Immutable signed-distance samples on a {@link DistanceGridSpec}.
  * Samples are stored as {@code float}. Interpolation runs in {@code double}.
@@ -58,9 +56,6 @@ public final class DistanceGrid2D {
                             + spec.originX() + ", " + spec.maxX() + "] x ["
                             + spec.originY() + ", " + spec.maxY() + "]"
             );
-        }
-        if (Counters.ENABLED) {
-            Counters.GRID_INTERPOLATIONS.increment();
         }
         int i = (int) fx;
         int j = (int) fy;

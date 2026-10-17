@@ -3,7 +3,6 @@ package cvdexplorer.field;
 import cvdexplorer.core.DomainLimitExceededException;
 import cvdexplorer.geometry.ClosedPolyline;
 import cvdexplorer.geometry.PolylineDistanceIndex;
-import cvdexplorer.instrument.Counters;
 
 import java.util.Arrays;
 import java.util.stream.IntStream;
@@ -24,9 +23,6 @@ public final class DistanceGridBuilder {
         }
         if (index.segmentCount() != polygon.vertexCount()) {
             throw new IllegalArgumentException("Polyline and segment index do not describe the same chain");
-        }
-        if (Counters.ENABLED) {
-            Counters.GRID_BUILDS.increment();
         }
         int vertexCount = polygon.vertexCount();
         double[] xs = new double[vertexCount];

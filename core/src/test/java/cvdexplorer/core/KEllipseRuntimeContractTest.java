@@ -4,7 +4,6 @@ import cvdexplorer.field.DistanceGrid2D;
 import cvdexplorer.geometry.Box;
 import cvdexplorer.geometry.Transformation;
 import cvdexplorer.geometry.Vector;
-import cvdexplorer.instrument.Counters;
 import cvdexplorer.metric.MetricKind;
 import cvdexplorer.model.ClusterSite;
 import cvdexplorer.model.KEllipseMember;
@@ -40,7 +39,6 @@ class KEllipseRuntimeContractTest {
         ScenePreparation.PreparedScene scene = preparer.prepare(
                 clusters, MetricKind.MINIMUM_DISTANCE, NeighborOrder.NEAREST, 1, view
         );
-        Counters.reset();
 
         for (MetricKind metricKind : MetricKind.values()) {
             int parameter = metricKind == MetricKind.KTH_NEAREST_DISTANCE ? 2 : 1;
@@ -56,12 +54,6 @@ class KEllipseRuntimeContractTest {
             }
         }
 
-        Counters.Snapshot snapshot = Counters.snapshot();
-        assertEquals(0, snapshot.focalSumEvaluations());
-        assertEquals(0, snapshot.boundaryBuilds());
-        assertEquals(0, snapshot.indexQueries());
-        assertEquals(0, snapshot.gridBuilds());
-        assertTrue(snapshot.gridInterpolations() > 0);
         assertEquals(0, preparer.statistics().lastBoundaryBuilds());
         assertEquals(0, preparer.statistics().lastGridBuilds());
 

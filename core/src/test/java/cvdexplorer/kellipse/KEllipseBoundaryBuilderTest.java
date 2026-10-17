@@ -2,7 +2,6 @@ package cvdexplorer.kellipse;
 
 import cvdexplorer.geometry.ClosedPolyline;
 import cvdexplorer.geometry.Vector;
-import cvdexplorer.instrument.Counters;
 import cvdexplorer.kellipse.KEllipsePreparationException.Reason;
 import cvdexplorer.model.KEllipseMember;
 import org.junit.jupiter.api.Test;
@@ -171,28 +170,6 @@ class KEllipseBoundaryBuilderTest {
                 () -> new KEllipseBoundaryBuilder(settings).build(member)
         );
         assertEquals(Reason.NUMERICAL_FAILURE, failure.reason());
-    }
-
-    @Test
-    void buildCountsFocalSumsAndDoesNotCountARejectedCurve() throws Exception {
-        Counters.reset();
-        KEllipseMember member = new KEllipseMember(
-                List.of(Vector.xy(0, 0), Vector.xy(4, 0), Vector.xy(2, 3)),
-                Vector.xy(2, 10)
-        );
-        BUILDER.build(member);
-        Counters.Snapshot built = Counters.snapshot();
-        assertTrue(built.focalSumEvaluations() > 0);
-        assertEquals(1, built.boundaryBuilds());
-        assertEquals(1, built.indexBuilds());
-
-        Counters.reset();
-        assertThrows(KEllipsePreparationException.class, () -> BUILDER.build(
-                new KEllipseMember(List.of(Vector.xy(0, 0), Vector.xy(0, 0), Vector.xy(0, 0)), Vector.xy(0, 0))
-        ));
-        assertEquals(0, Counters.snapshot().boundaryBuilds());
-        assertEquals(0, Counters.snapshot().indexBuilds());
-        assertTrue(Counters.snapshot().focalSumEvaluations() > 0);
     }
 
     @Test

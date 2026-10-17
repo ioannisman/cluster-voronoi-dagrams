@@ -4,7 +4,6 @@ import cvdexplorer.geometry.ClosedPolyline;
 import cvdexplorer.geometry.PolylineDistanceIndex;
 import cvdexplorer.geometry.SegmentDistance;
 import cvdexplorer.geometry.Vector;
-import cvdexplorer.instrument.Counters;
 import cvdexplorer.kellipse.KEllipseApproximationSettings;
 import cvdexplorer.kellipse.KEllipseBoundaryBuilder;
 import cvdexplorer.kellipse.PreparedKEllipseBoundary;
@@ -29,9 +28,7 @@ class DistanceGridBuilderTest {
         ));
         PolylineDistanceIndex index = PolylineDistanceIndex.build(square);
         DistanceGridSpec spec = new DistanceGridSpec(-1, -1, 1, 7, 7);
-        Counters.reset();
         DistanceGrid2D grid = DistanceGridBuilder.build(spec, square, index);
-        assertEquals(1, Counters.snapshot().gridBuilds());
 
         assertTrue(grid.sample(3, 3) < 0.0f);
         assertTrue(grid.sample(0, 3) > 0.0f);

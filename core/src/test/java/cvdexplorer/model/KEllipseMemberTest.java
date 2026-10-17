@@ -1,6 +1,5 @@
 package cvdexplorer.model;
 
-import cvdexplorer.instrument.Counters;
 import org.junit.jupiter.api.Test;
 import cvdexplorer.geometry.Vector;
 
@@ -61,10 +60,7 @@ class KEllipseMemberTest {
     void withHandleRecomputesLevelAndLeavesTheOriginal() {
         KEllipseMember ellipse = member(Vector.xy(0, 3), Vector.xy(0, 0), Vector.xy(2, 0), Vector.xy(4, 0));
         double originalLevel = ellipse.level();
-        Counters.reset();
         KEllipseMember moved = (KEllipseMember) ellipse.withHandle(3, Vector.xy(0, 6));
-        assertEquals(0, Counters.snapshot().boundaryBuilds());
-        assertEquals(0, Counters.snapshot().focalSumEvaluations());
         assertEquals(originalLevel, ellipse.level(), 0.0);
         assertEquals(Vector.xy(0, 3), ellipse.controlHandle());
         assertEquals(moved.focalSum(0, 6), moved.level(), 0.0);

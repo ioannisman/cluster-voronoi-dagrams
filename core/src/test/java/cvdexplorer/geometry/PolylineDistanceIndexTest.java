@@ -1,6 +1,5 @@
 package cvdexplorer.geometry;
 
-import cvdexplorer.instrument.Counters;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
 
@@ -276,30 +275,6 @@ class PolylineDistanceIndexTest {
             );
             assertEquals(reference, oracle, 1e-9);
         }
-    }
-
-    @Test
-    void buildAndQueryIncrementCounters() {
-        assertTrue(Counters.ENABLED);
-        Counters.reset();
-        ClosedPolyline polyline = ClosedPolyline.of(List.of(
-                Vector.xy(0, 0),
-                Vector.xy(1, 0),
-                Vector.xy(0, 1)
-        ));
-        PolylineDistanceIndex index = PolylineDistanceIndex.build(polyline);
-        index.distanceTo(0.25, 0.25);
-        index.distanceTo(Vector.xy(2, 2));
-        Counters.Snapshot snapshot = Counters.snapshot();
-        assertEquals(1, snapshot.indexBuilds());
-        assertEquals(2, snapshot.indexQueries());
-        assertEquals(0, snapshot.boundaryBuilds());
-        assertEquals(0, snapshot.gridBuilds());
-        assertEquals(0, snapshot.gridInterpolations());
-        assertEquals(0, snapshot.focalSumEvaluations());
-        Counters.reset();
-        assertEquals(0, Counters.snapshot().indexBuilds());
-        assertEquals(0, Counters.snapshot().indexQueries());
     }
 
     @Test

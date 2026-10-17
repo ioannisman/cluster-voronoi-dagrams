@@ -1,7 +1,6 @@
 package cvdexplorer.model;
 
 import cvdexplorer.geometry.Vector;
-import cvdexplorer.instrument.Counters;
 
 import java.util.Arrays;
 import java.util.List;
@@ -68,14 +67,8 @@ public final class KEllipseMember implements ClusterMember {
         return level;
     }
 
-    /**
-     * Sum of distances from {@code (x, y)} to the foci. Each call is counted when instrumentation
-     * is enabled. Constructing a member does not increment the counter.
-     */
+    /** Sum of distances from {@code (x, y)} to the foci. */
     public double focalSum(double x, double y) {
-        if (Counters.ENABLED) {
-            Counters.FOCAL_SUM_EVALUATIONS.increment();
-        }
         return sumDistances(x, y);
     }
 

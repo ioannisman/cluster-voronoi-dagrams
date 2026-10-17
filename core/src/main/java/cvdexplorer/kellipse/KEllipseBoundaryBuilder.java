@@ -4,7 +4,6 @@ import cvdexplorer.geometry.ClosedPolyline;
 import cvdexplorer.geometry.PolylineDistanceIndex;
 import cvdexplorer.geometry.SegmentDistance;
 import cvdexplorer.geometry.Vector;
-import cvdexplorer.instrument.Counters;
 import cvdexplorer.kellipse.KEllipsePreparationException.Reason;
 import cvdexplorer.model.KEllipseMember;
 
@@ -56,9 +55,6 @@ public final class KEllipseBoundaryBuilder {
                         "K-ellipse boundary vertex " + i + " is not finite"
                 );
             }
-        }
-        if (Counters.ENABLED) {
-            Counters.BOUNDARY_BUILDS.increment();
         }
         ClosedPolyline polyline = ClosedPolyline.of(x, y);
         PolylineDistanceIndex index = PolylineDistanceIndex.build(polyline);

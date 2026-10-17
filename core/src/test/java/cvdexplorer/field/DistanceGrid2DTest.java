@@ -1,6 +1,5 @@
 package cvdexplorer.field;
 
-import cvdexplorer.instrument.Counters;
 import org.junit.jupiter.api.Test;
 
 import java.util.Random;
@@ -46,18 +45,6 @@ class DistanceGrid2DTest {
         assertTrue(outside.getMessage().contains("outside"));
         assertThrows(DistanceGrid2D.OutOfDomainException.class, () -> grid.interpolate(Double.NaN, 1));
         assertThrows(DistanceGrid2D.OutOfDomainException.class, () -> grid.interpolate(-1e-15, 0));
-    }
-
-    @Test
-    void interpolationIncrementsTheCounter() {
-        assertTrue(Counters.ENABLED);
-        Counters.reset();
-        DistanceGrid2D grid = grid(new DistanceGridSpec(0, 0, 1, 3, 3), (x, y) -> x + y);
-        grid.interpolate(0.5, 0.5);
-        grid.interpolate(1, 1);
-        assertEquals(2, Counters.snapshot().gridInterpolations());
-        assertThrows(DistanceGrid2D.OutOfDomainException.class, () -> grid.interpolate(5, 5));
-        assertEquals(2, Counters.snapshot().gridInterpolations());
     }
 
     private static DistanceGrid2D grid(DistanceGridSpec spec, Field field) {

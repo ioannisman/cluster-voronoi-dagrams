@@ -1,7 +1,5 @@
 package cvdexplorer.geometry;
 
-import cvdexplorer.instrument.Counters;
-
 /**
  * Euclidean distance from a query point to a closed polyline.
  * <p>
@@ -67,9 +65,6 @@ public final class PolylineDistanceIndex {
     public static PolylineDistanceIndex build(ClosedPolyline polyline) {
         if (polyline == null) {
             throw new IllegalArgumentException("ClosedPolyline is required");
-        }
-        if (Counters.ENABLED) {
-            Counters.INDEX_BUILDS.increment();
         }
         int segmentCount = polyline.vertexCount();
         double[] sourceAx = new double[segmentCount];
@@ -152,9 +147,6 @@ public final class PolylineDistanceIndex {
     }
 
     public double distanceTo(double x, double y) {
-        if (Counters.ENABLED) {
-            Counters.INDEX_QUERIES.increment();
-        }
         double bestSquared = visit(root, x, y, Double.POSITIVE_INFINITY);
         return Math.sqrt(bestSquared);
     }
