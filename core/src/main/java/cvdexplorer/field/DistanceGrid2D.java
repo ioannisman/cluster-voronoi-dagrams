@@ -12,14 +12,24 @@ public final class DistanceGrid2D {
     private final float[] samples;
 
     public DistanceGrid2D(DistanceGridSpec spec, float[] samples) {
+        this(spec, samples, true);
+    }
+
+    /** Takes ownership of {@code samples}. The caller must not modify the array afterward. */
+    static DistanceGrid2D adopt(DistanceGridSpec spec, float[] samples) {
+        return new DistanceGrid2D(spec, samples, false);
+    }
+
+    private DistanceGrid2D(DistanceGridSpec spec, float[] samples, boolean copy) {
         if (spec == null || samples == null) {
             throw new IllegalArgumentException("Distance grid requires a spec and samples");
         }
-        if (samples.length != spec.nodeCount()) {
-            throw new IllegalArgumentException("Sample length " + samples.length + " does not match " + spec.nodeCount());
+        long expected = spec.nodeCount();
+        if (expected > Integer.MAX_VALUE || samples.length != expected) {
+            throw new IllegalArgumentException("Sample length " + samples.length + " does not match " + expected);
         }
         this.spec = spec;
-        this.samples = samples.clone();
+        this.samples = copy ? samples.clone() : samples;
     }
 
     public DistanceGridSpec spec() {

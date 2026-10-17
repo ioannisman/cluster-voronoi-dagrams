@@ -1,5 +1,6 @@
 package cvdexplorer.field;
 
+import cvdexplorer.core.DomainLimitExceededException;
 import cvdexplorer.geometry.ClosedPolyline;
 import cvdexplorer.geometry.PolylineDistanceIndex;
 import cvdexplorer.instrument.Counters;
@@ -40,7 +41,13 @@ public final class DistanceGridBuilder {
         }
         int nodesX = spec.nodesX();
         int nodesY = spec.nodesY();
-        float[] samples = new float[spec.nodeCount()];
+        long nodeCount = spec.nodeCount();
+        if (nodeCount > Integer.MAX_VALUE) {
+            throw new DomainLimitExceededException(
+                    "K-ellipse distance grid has " + nodeCount + " nodes, which is too many to allocate. Zoom in."
+            );
+        }
+        float[] samples = new float[Math.toIntExact(nodeCount)];
         double originX = spec.originX();
         double originY = spec.originY();
         double spacing = spec.spacing();
@@ -49,7 +56,7 @@ public final class DistanceGridBuilder {
         IntStream.range(0, nodesY).parallel().forEach(j -> fillRow(
                 samples, xs, ys, index, j, nodesX, originX, originY, spacing, rowMinY, rowMaxY
         ));
-        return new DistanceGrid2D(spec, samples);
+        return DistanceGrid2D.adopt(spec, samples);
     }
 
     private static void fillRow(

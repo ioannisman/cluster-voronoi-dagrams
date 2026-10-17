@@ -17,9 +17,12 @@ public record PreparedKEllipseBoundary(
         ClosedPolyline polyline,
         PolylineDistanceIndex index,
         Vector interiorPoint,
-        Box bounds,
         Diagnostics diagnostics
 ) {
+    public Box bounds() {
+        return polyline.bounds();
+    }
+
     public record Diagnostics(double maxAcceptedDeviation, boolean refinementCapHit) {
     }
 }

@@ -111,9 +111,8 @@ public class AppMain implements Drawing {
     private boolean gridLimitWarned = false;
     private boolean outOfDomainWarned = false;
     private GridLimitKey lastFailedGridKey = null;
-    /** Skips another boundary attempt while the same k-ellipse instances are still installed. */
-    private boolean preparationSkipActive = false;
-    private int failedPreparationIdentity = 0;
+    /** K-ellipses installed when boundary preparation last failed. Null after a successful prepare. */
+    private List<KEllipseMember> failedPreparationMembers = null;
     private Box lastRequiredWorldBounds = null;
 
     private List<Selection> coMovingHandles = List.of();
@@ -146,10 +145,9 @@ public class AppMain implements Drawing {
                 requiredWorldBounds.q().y(),
                 kEllipseCount
         );
-        int memberIdentity = kEllipseIdentity(state.clusters());
         PreparedScene preparedScene = null;
         boolean skipBecauseUnchangedLimit = lastFailedGridKey != null && lastFailedGridKey.equals(gridKey);
-        boolean skipUnchangedGeometry = preparationSkipActive && failedPreparationIdentity == memberIdentity;
+        boolean skipUnchangedGeometry = sameFailedKEllipses(state.clusters());
         if (skipBecauseUnchangedLimit || skipUnchangedGeometry) {
             preparer.evictAbsent(state.clusters());
         } else {
@@ -164,7 +162,7 @@ public class AppMain implements Drawing {
                 clearPreparationLatches();
             } catch (DomainLimitExceededException e) {
                 lastFailedGridKey = gridKey;
-                preparationSkipActive = false;
+                failedPreparationMembers = null;
                 if (!gridLimitWarned) {
                     showErrorDialog("K-ellipse grid limit", e.getMessage());
                     gridLimitWarned = true;
@@ -172,8 +170,7 @@ public class AppMain implements Drawing {
             } catch (KEllipsePreparationException e) {
                 lastFailedGridKey = null;
                 gridLimitWarned = false;
-                preparationSkipActive = true;
-                failedPreparationIdentity = memberIdentity;
+                failedPreparationMembers = liveKEllipses(state.clusters());
                 showErrorDialog("K-ellipse preparation failed", e.getMessage());
             }
         }
@@ -205,20 +202,35 @@ public class AppMain implements Drawing {
     private void clearPreparationLatches() {
         lastFailedGridKey = null;
         gridLimitWarned = false;
-        preparationSkipActive = false;
-        failedPreparationIdentity = 0;
+        failedPreparationMembers = null;
     }
 
-    private static int kEllipseIdentity(List<ClusterSite> clusters) {
-        int identity = 1;
+    private boolean sameFailedKEllipses(List<ClusterSite> clusters) {
+        if (failedPreparationMembers == null) {
+            return false;
+        }
+        List<KEllipseMember> current = liveKEllipses(clusters);
+        if (failedPreparationMembers.size() != current.size()) {
+            return false;
+        }
+        for (int i = 0; i < current.size(); i++) {
+            if (failedPreparationMembers.get(i) != current.get(i)) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    private static List<KEllipseMember> liveKEllipses(List<ClusterSite> clusters) {
+        List<KEllipseMember> members = new ArrayList<>();
         for (ClusterSite cluster : clusters) {
             for (ClusterMember member : cluster.members()) {
-                if (member instanceof KEllipseMember) {
-                    identity = 31 * identity + System.identityHashCode(member);
+                if (member instanceof KEllipseMember kEllipse) {
+                    members.add(kEllipse);
                 }
             }
         }
-        return identity;
+        return List.copyOf(members);
     }
 
     private Box requiredWorldBounds(View view) {

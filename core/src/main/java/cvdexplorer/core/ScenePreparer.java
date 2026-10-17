@@ -124,19 +124,11 @@ public final class ScenePreparer {
                 throw budget;
             }
             DistanceGridSpec fresh = policy.ensureCovers(null, requiredWorldBounds);
-            if (sameExtent(fresh, spec)) {
+            if (fresh.equals(spec)) {
                 throw budget;
             }
             return new BudgetedPreparation(fresh, cache.prepareAll(clusters, fresh));
         }
-    }
-
-    private static boolean sameExtent(DistanceGridSpec a, DistanceGridSpec b) {
-        return a.originX() == b.originX()
-                && a.originY() == b.originY()
-                && a.spacing() == b.spacing()
-                && a.nodesX() == b.nodesX()
-                && a.nodesY() == b.nodesY();
     }
 
     private record BudgetedPreparation(

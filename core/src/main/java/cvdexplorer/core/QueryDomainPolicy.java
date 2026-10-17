@@ -50,18 +50,29 @@ public final class QueryDomainPolicy {
             return current;
         }
         Box expanded = expanded(requiredWorldBounds);
-        long version = current == null ? 1L : current.version() + 1L;
-        DistanceGridSpec spec = DistanceGridSpec.alignedCovering(expanded, spacing, version);
-        if (spec.nodesX() > limits.maxNodesPerAxis()
-                || spec.nodesY() > limits.maxNodesPerAxis()
-                || spec.nodeCount() > limits.maxNodesPerGrid()) {
+        long nodesX = DistanceGridSpec.nodesCovering(expanded.p().x(), expanded.q().x(), spacing);
+        long nodesY = DistanceGridSpec.nodesCovering(expanded.p().y(), expanded.q().y(), spacing);
+        if (nodesX > limits.maxNodesPerAxis()
+                || nodesY > limits.maxNodesPerAxis()
+                || nodeProductExceeds(nodesX, nodesY, limits.maxNodesPerGrid())) {
             throw new DomainLimitExceededException(
-                    "K-ellipse grid would be " + spec.nodesX() + " by " + spec.nodesY()
+                    "K-ellipse grid would be " + nodeText(nodesX) + " by " + nodeText(nodesY)
                             + " nodes (limit " + limits.maxNodesPerAxis() + " per axis, "
                             + limits.maxNodesPerGrid() + " nodes). Zoom in."
             );
         }
-        return spec;
+        return DistanceGridSpec.alignedCovering(expanded, spacing);
+    }
+
+    private static String nodeText(long nodes) {
+        return nodes == Long.MAX_VALUE ? "too many" : Long.toString(nodes);
+    }
+
+    private static boolean nodeProductExceeds(long nodesX, long nodesY, long limit) {
+        if (nodesX > Long.MAX_VALUE / nodesY) {
+            return true;
+        }
+        return nodesX * nodesY > limit;
     }
 
     private Box expanded(Box required) {

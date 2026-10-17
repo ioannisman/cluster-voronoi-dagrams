@@ -10,6 +10,7 @@ public final class ClosedPolyline {
     private final double[] xs;
     private final double[] ys;
     private final Box bounds;
+    private final List<Vector> vertices;
 
     private ClosedPolyline(double[] xs, double[] ys) {
         if (xs.length < 1) {
@@ -34,6 +35,11 @@ public final class ClosedPolyline {
             maxY = Math.max(maxY, ys[i]);
         }
         this.bounds = Box.pq(Vector.xy(minX, minY), Vector.xy(maxX, maxY));
+        Vector[] points = new Vector[xs.length];
+        for (int i = 0; i < xs.length; i++) {
+            points[i] = Vector.xy(xs[i], ys[i]);
+        }
+        this.vertices = List.of(points);
     }
 
     public static ClosedPolyline of(List<Vector> vertices) {
@@ -82,11 +88,7 @@ public final class ClosedPolyline {
     }
 
     public List<Vector> vertices() {
-        Vector[] copy = new Vector[xs.length];
-        for (int i = 0; i < xs.length; i++) {
-            copy[i] = Vector.xy(xs[i], ys[i]);
-        }
-        return List.of(copy);
+        return vertices;
     }
 
     public Box bounds() {

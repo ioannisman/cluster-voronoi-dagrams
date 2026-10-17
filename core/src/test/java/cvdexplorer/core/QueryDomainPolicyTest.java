@@ -6,6 +6,7 @@ import cvdexplorer.geometry.Box;
 import cvdexplorer.geometry.Vector;
 import org.junit.jupiter.api.Test;
 
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -27,7 +28,7 @@ class QueryDomainPolicyTest {
         DistanceGridSpec first = policy.ensureCovers(null, box(0, 0, 20, 20));
         Box wider = box(-100, -100, 100, 100);
         DistanceGridSpec second = policy.ensureCovers(first, wider);
-        assertTrue(second.version() > first.version());
+        assertNotEquals(first, second);
         assertTrue(second.covers(wider));
         assertSame(second, policy.ensureCovers(second, wider));
     }
@@ -54,6 +55,15 @@ class QueryDomainPolicyTest {
         DomainLimitExceededException failure = assertThrows(
                 DomainLimitExceededException.class,
                 () -> tight.ensureCovers(null, box(0, 0, 100, 100))
+        );
+        assertTrue(failure.getMessage().contains("Zoom in"));
+    }
+
+    @Test
+    void extremeZoomOutIsADomainLimit() {
+        DomainLimitExceededException failure = assertThrows(
+                DomainLimitExceededException.class,
+                () -> policy.ensureCovers(null, box(-3e9, -3e9, 3e9, 3e9))
         );
         assertTrue(failure.getMessage().contains("Zoom in"));
     }

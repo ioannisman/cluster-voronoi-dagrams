@@ -28,7 +28,7 @@ class DistanceGridBuilderTest {
                 Vector.xy(0, 4)
         ));
         PolylineDistanceIndex index = PolylineDistanceIndex.build(square);
-        DistanceGridSpec spec = new DistanceGridSpec(-1, -1, 1, 7, 7, 1);
+        DistanceGridSpec spec = new DistanceGridSpec(-1, -1, 1, 7, 7);
         Counters.reset();
         DistanceGrid2D grid = DistanceGridBuilder.build(spec, square, index);
         assertEquals(1, Counters.snapshot().gridBuilds());
@@ -50,7 +50,7 @@ class DistanceGridBuilderTest {
                 Vector.xy(0, 4)
         ));
         PolylineDistanceIndex index = PolylineDistanceIndex.build(rectangle);
-        DistanceGridSpec spec = new DistanceGridSpec(-1, -1, 1, 4, 7, 1);
+        DistanceGridSpec spec = new DistanceGridSpec(-1, -1, 1, 4, 7);
         DistanceGrid2D grid = DistanceGridBuilder.build(spec, rectangle, index);
         boolean anyNegative = false;
         for (int j = 0; j < spec.nodesY(); j++) {
@@ -70,7 +70,7 @@ class DistanceGridBuilderTest {
                 Vector.xy(0, 0), Vector.xy(3, 0), Vector.xy(3, 2), Vector.xy(0, 2)
         ));
         PolylineDistanceIndex index = PolylineDistanceIndex.build(square);
-        DistanceGridSpec spec = new DistanceGridSpec(-1, -1, 0.5, 10, 8, 2);
+        DistanceGridSpec spec = new DistanceGridSpec(-1, -1, 0.5, 10, 8);
         DistanceGrid2D first = DistanceGridBuilder.build(spec, square, index);
         DistanceGrid2D second = DistanceGridBuilder.build(spec, square, index);
         for (int j = 0; j < spec.nodesY(); j++) {
@@ -88,7 +88,7 @@ class DistanceGridBuilderTest {
         );
         PreparedKEllipseBoundary boundary = new KEllipseBoundaryBuilder(KEllipseApproximationSettings.DEFAULT).build(member);
         double spacing = 1.0;
-        DistanceGridSpec spec = DistanceGridSpec.alignedCovering(boundary.bounds(), spacing, 1);
+        DistanceGridSpec spec = DistanceGridSpec.alignedCovering(boundary.bounds(), spacing);
         DistanceGrid2D grid = DistanceGridBuilder.build(spec, boundary.polyline(), boundary.index());
         Random random = new Random(7);
         double maxError = 0.0;

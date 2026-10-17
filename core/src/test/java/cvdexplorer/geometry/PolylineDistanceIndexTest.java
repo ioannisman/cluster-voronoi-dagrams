@@ -11,6 +11,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.IntStream;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -46,6 +47,7 @@ class PolylineDistanceIndexTest {
         assertEquals(Vector.xy(0, 0), polyline.bounds().p());
         assertEquals(Vector.xy(4, 3), polyline.bounds().q());
         assertEquals(Vector.xy(4, 0), polyline.vertices().get(1));
+        assertSame(polyline.vertices(), polyline.vertices());
         assertThrows(IndexOutOfBoundsException.class, () -> polyline.x(3));
         assertThrows(IndexOutOfBoundsException.class, () -> polyline.y(-1));
     }

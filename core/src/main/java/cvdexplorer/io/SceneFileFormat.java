@@ -1,9 +1,6 @@
 package cvdexplorer.io;
 
 import cvdexplorer.geometry.Vector;
-import cvdexplorer.kellipse.KEllipseApproximationSettings;
-import cvdexplorer.kellipse.KEllipseBoundaryBuilder;
-import cvdexplorer.kellipse.KEllipsePreparationException;
 import cvdexplorer.metric.MetricKind;
 import cvdexplorer.model.CircleMember;
 import cvdexplorer.model.ClusterMember;
@@ -321,14 +318,6 @@ public final class SceneFileFormat {
         } catch (IllegalArgumentException e) {
             throw new SceneJsonException(
                     "K_ELLIPSE member #" + memberIndex + " in cluster " + clusterName + " is invalid: " + e.getMessage()
-            );
-        }
-        try {
-            new KEllipseBoundaryBuilder(KEllipseApproximationSettings.DEFAULT).build(member);
-        } catch (KEllipsePreparationException e) {
-            throw new SceneJsonException(
-                    "K_ELLIPSE member #" + memberIndex + " in cluster " + clusterName
-                            + " cannot be prepared: " + e.getMessage()
             );
         }
         return member;

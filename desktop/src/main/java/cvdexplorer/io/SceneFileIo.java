@@ -20,16 +20,4 @@ public final class SceneFileIo {
     public static SceneSnapshot read(Path path) throws IOException, SceneJsonException {
         return SceneJsonCodec.parse(Files.readString(path, StandardCharsets.UTF_8));
     }
-
-    public static void load(SceneState state, Path path) throws IOException, SceneJsonException {
-        SceneSnapshot snapshot = read(path);
-        state.applyLoadedScene(
-                snapshot.metricKind(),
-                snapshot.neighborOrder(),
-                snapshot.siteMemberKind(),
-                snapshot.clusters(),
-                snapshot.metricParameter(),
-                snapshot.memberParameter()
-        );
-    }
 }

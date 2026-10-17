@@ -68,7 +68,6 @@ public final class KEllipseBoundaryBuilder {
                 polyline,
                 index,
                 interior,
-                polyline.bounds(),
                 new PreparedKEllipseBoundary.Diagnostics(
                         refinement.maxAcceptedDeviation,
                         refinement.capHit

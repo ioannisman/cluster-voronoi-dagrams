@@ -53,7 +53,7 @@ public final class MemberOverlayRenderer {
         } else if (member instanceof EllipseMember em) {
             view.setLineWidth(lw);
             view.setStroke(memberSelected ? SELECTION_STROKE : edge);
-            strokeEllipse(view, em);
+            strokeClosed(view, em.boundaryPolyline());
         } else if (member instanceof LineMember lm) {
             view.setLineWidth(lw);
             view.setStroke(memberSelected ? SELECTION_STROKE : edge);
@@ -94,18 +94,6 @@ public final class MemberOverlayRenderer {
                 view.setStroke(handleSelected ? SELECTION_STROKE : edge);
                 view.strokeCircleCentered(DrawingFxGeometry.toDrawingFx(member.getHandle(h)), handleRadiusWorld);
             }
-        }
-    }
-
-    private static void strokeEllipse(View view, EllipseMember em) {
-        List<Vector> outline = em.boundaryPolyline();
-        if (outline.size() < 2) {
-            return;
-        }
-        Vector prev = outline.get(outline.size() - 1);
-        for (Vector point : outline) {
-            view.strokeLineSegment(DrawingFxGeometry.toDrawingFx(prev), DrawingFxGeometry.toDrawingFx(point));
-            prev = point;
         }
     }
 

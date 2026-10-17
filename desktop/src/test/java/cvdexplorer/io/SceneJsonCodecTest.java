@@ -19,7 +19,10 @@ import cvdexplorer.model.SiteMemberKind;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
+import cvdexplorer.field.DistanceGridLimits;
+import cvdexplorer.geometry.Box;
 import cvdexplorer.geometry.Vector;
+import cvdexplorer.kellipse.KEllipsePreparationException;
 
 import java.util.List;
 
@@ -462,7 +465,7 @@ class SceneJsonCodecTest {
     }
 
     @Test
-    void rejectsDegenerateKEllipseFile() {
+    void rejectsDegenerateKEllipseFile() throws Exception {
         String json = """
                 {
                   "version": "1",
@@ -479,9 +482,24 @@ class SceneJsonCodecTest {
                   ]
                 }
                 """;
-        SceneJsonException ex = assertThrows(SceneJsonException.class, () -> SceneJsonCodec.parse(json));
+        SceneSnapshot parsed = SceneJsonCodec.parse(json);
+        assertInstanceOf(KEllipseMember.class, parsed.clusters().get(0).members().get(0));
+
+        SceneState state = new SceneState();
+        state.clusters().add(new ClusterSite("Keep", Rgba.RED, List.of(new PointMember(Vector.xy(1, 2)))));
+        KEllipsePreparationException ex = assertThrows(
+                KEllipsePreparationException.class,
+                () -> PreparedSceneInstall.install(
+                        state,
+                        parsed,
+                        Box.pq(Vector.xy(-40, -40), Vector.xy(40, 40)),
+                        DistanceGridLimits.DEFAULT
+                )
+        );
         assertTrue(ex.getMessage().contains("Cedar"));
         assertTrue(ex.getMessage().contains("cannot be prepared"));
+        assertEquals("Keep", state.clusters().get(0).name());
+        assertInstanceOf(PointMember.class, state.clusters().get(0).members().get(0));
     }
 
     @Test

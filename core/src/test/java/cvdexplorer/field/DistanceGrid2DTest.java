@@ -13,7 +13,7 @@ class DistanceGrid2DTest {
 
     @Test
     void bilinearReproducesLinearAndBilinearFields() {
-        DistanceGridSpec spec = new DistanceGridSpec(0, 0, 1, 5, 5, 1);
+        DistanceGridSpec spec = new DistanceGridSpec(0, 0, 1, 5, 5);
         DistanceGrid2D linear = grid(spec, (x, y) -> 3 * x - 2 * y + 1);
         DistanceGrid2D product = grid(spec, (x, y) -> x * y);
         Random random = new Random(20261011L);
@@ -27,7 +27,7 @@ class DistanceGrid2DTest {
 
     @Test
     void cornersAndFarEdgesMatchTheNodeSamples() {
-        DistanceGridSpec spec = new DistanceGridSpec(0, 0, 1, 5, 5, 1);
+        DistanceGridSpec spec = new DistanceGridSpec(0, 0, 1, 5, 5);
         DistanceGrid2D grid = grid(spec, (x, y) -> 3 * x - 2 * y + 1);
         assertEquals(1.0, grid.interpolate(0, 0), 1e-6);
         assertEquals(13.0, grid.interpolate(4, 0), 1e-6);
@@ -38,7 +38,7 @@ class DistanceGrid2DTest {
 
     @Test
     void outsideAndNanFail() {
-        DistanceGrid2D grid = grid(new DistanceGridSpec(0, 0, 1, 5, 5, 1), (x, y) -> 0);
+        DistanceGrid2D grid = grid(new DistanceGridSpec(0, 0, 1, 5, 5), (x, y) -> 0);
         DistanceGrid2D.OutOfDomainException outside = assertThrows(
                 DistanceGrid2D.OutOfDomainException.class,
                 () -> grid.interpolate(grid.spec().maxX() + 1e-9, 1)
@@ -52,7 +52,7 @@ class DistanceGrid2DTest {
     void interpolationIncrementsTheCounter() {
         assertTrue(Counters.ENABLED);
         Counters.reset();
-        DistanceGrid2D grid = grid(new DistanceGridSpec(0, 0, 1, 3, 3, 1), (x, y) -> x + y);
+        DistanceGrid2D grid = grid(new DistanceGridSpec(0, 0, 1, 3, 3), (x, y) -> x + y);
         grid.interpolate(0.5, 0.5);
         grid.interpolate(1, 1);
         assertEquals(2, Counters.snapshot().gridInterpolations());
@@ -61,7 +61,7 @@ class DistanceGrid2DTest {
     }
 
     private static DistanceGrid2D grid(DistanceGridSpec spec, Field field) {
-        float[] samples = new float[spec.nodeCount()];
+        float[] samples = new float[Math.toIntExact(spec.nodeCount())];
         for (int j = 0; j < spec.nodesY(); j++) {
             for (int i = 0; i < spec.nodesX(); i++) {
                 double x = spec.originX() + i * spec.spacing();

@@ -51,7 +51,7 @@ public final class KEllipseCacheManager {
             return existing.boundary;
         }
         PreparedKEllipseBoundary boundary = boundaryBuilder.build(member);
-        entries.put(member, new Entry(boundary, null, null));
+        entries.put(member, new Entry(boundary, null));
         return boundary;
     }
 
@@ -71,7 +71,7 @@ public final class KEllipseCacheManager {
             liveSet.put(member, Boolean.TRUE);
         }
         evictAbsent(liveSet);
-        long neededBytes = spec.sampleBytes() * (long) live.size();
+        long neededBytes = sampleBytesFor(spec, live.size());
         if (neededBytes > limits.maxTotalSampleBytes()) {
             throw new DomainLimitExceededException(
                     "K-ellipse distance grids need " + neededBytes
@@ -80,7 +80,11 @@ public final class KEllipseCacheManager {
         }
         IdentityHashMap<KEllipseMember, PreparedKEllipseMember> prepared = new IdentityHashMap<>();
         for (KEllipseMember member : live) {
-            prepared.put(member, prepareMember(member, spec));
+            try {
+                prepared.put(member, prepareMember(member, spec));
+            } catch (KEllipsePreparationException failure) {
+                throw preparationFailure(clusters, member, failure);
+            }
         }
         totalSampleBytes = recountSampleBytes();
         return prepared;
@@ -123,19 +127,53 @@ public final class KEllipseCacheManager {
         if (entry == null) {
             boundary = boundaryBuilder.build(member);
             lastBoundaryBuilds++;
-            entry = new Entry(boundary, null, null);
+            entry = new Entry(boundary, null);
             entries.put(member, entry);
         } else {
             boundary = entry.boundary;
         }
-        if (entry.prepared != null && entry.grid.spec().equals(spec)) {
+        if (entry.prepared != null && entry.prepared.grid().spec().equals(spec)) {
             return entry.prepared;
         }
         DistanceGrid2D grid = DistanceGridBuilder.build(spec, boundary.polyline(), boundary.index());
         lastGridBuilds++;
         PreparedKEllipseMember prepared = new PreparedKEllipseMember(member, grid);
-        entries.put(member, new Entry(boundary, grid, prepared));
+        entries.put(member, new Entry(boundary, prepared));
         return prepared;
+    }
+
+    private static long sampleBytesFor(DistanceGridSpec spec, int members) {
+        if (members <= 0) {
+            return 0L;
+        }
+        long sampleBytes = spec.sampleBytes();
+        if (sampleBytes > Long.MAX_VALUE / members) {
+            return Long.MAX_VALUE;
+        }
+        return sampleBytes * members;
+    }
+
+    private static KEllipsePreparationException preparationFailure(
+            List<ClusterSite> clusters,
+            KEllipseMember member,
+            KEllipsePreparationException failure
+    ) {
+        if (clusters != null) {
+            for (ClusterSite cluster : clusters) {
+                int memberIndex = 0;
+                for (ClusterMember candidate : cluster.members()) {
+                    if (candidate == member) {
+                        return new KEllipsePreparationException(
+                                failure.reason(),
+                                "K_ELLIPSE member #" + memberIndex + " in cluster " + cluster.name()
+                                        + " cannot be prepared: " + failure.getMessage()
+                        );
+                    }
+                    memberIndex++;
+                }
+            }
+        }
+        return failure;
     }
 
     private void evictAbsent(IdentityHashMap<KEllipseMember, Boolean> liveSet) {
@@ -147,8 +185,8 @@ public final class KEllipseCacheManager {
     private long recountSampleBytes() {
         long bytes = 0L;
         for (Entry entry : entries.values()) {
-            if (entry.grid != null) {
-                bytes += entry.grid.spec().sampleBytes();
+            if (entry.prepared != null) {
+                bytes += entry.prepared.grid().spec().sampleBytes();
             }
         }
         return bytes;
@@ -182,7 +220,6 @@ public final class KEllipseCacheManager {
 
     private record Entry(
             PreparedKEllipseBoundary boundary,
-            DistanceGrid2D grid,
             PreparedKEllipseMember prepared
     ) {
     }

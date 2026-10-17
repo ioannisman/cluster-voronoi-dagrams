@@ -36,6 +36,7 @@ class KEllipseCacheManagerTest {
         List<ClusterSite> clusters = List.of(cluster);
 
         preparer.prepare(clusters, MetricKind.MINIMUM_DISTANCE, NeighborOrder.NEAREST, 1, VIEW);
+        assertSame(preparer.outlineFor(a), preparer.outlineFor(a));
         assertEquals(3, preparer.statistics().lastBoundaryBuilds());
         assertEquals(3, preparer.statistics().lastGridBuilds());
 

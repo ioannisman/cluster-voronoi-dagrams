@@ -1,5 +1,8 @@
 package cvdexplorer.io;
 
+import cvdexplorer.field.DistanceGridLimits;
+import cvdexplorer.geometry.Box;
+import cvdexplorer.geometry.Vector;
 import cvdexplorer.metric.MetricKind;
 import cvdexplorer.model.ClusterSite;
 import cvdexplorer.model.NeighborOrder;
@@ -8,7 +11,6 @@ import cvdexplorer.model.Rgba;
 import cvdexplorer.model.SceneState;
 import cvdexplorer.model.SiteMemberKind;
 import org.junit.jupiter.api.Test;
-import cvdexplorer.geometry.Vector;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -44,7 +46,12 @@ class SceneFileIoTest {
             loaded.clusters().add(new ClusterSite("X", Rgba.BLACK, List.of(new PointMember(Vector.xy(0, 0)))));
             loaded.numberOfClusters = 1;
 
-            SceneFileIo.load(loaded, file);
+            PreparedSceneInstall.install(
+                    loaded,
+                    SceneFileIo.read(file),
+                    Box.pq(Vector.xy(-40, -40), Vector.xy(40, 40)),
+                    DistanceGridLimits.DEFAULT
+            );
 
             assertEquals(MetricKind.MAXIMUM_DISTANCE, loaded.metricKind);
             assertEquals(NeighborOrder.NEAREST, loaded.neighborOrder);
