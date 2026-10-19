@@ -1,0 +1,123 @@
+{
+  "version": "1",
+  "name": "Nearest polygon",
+  "metricKind": "MINIMUM_DISTANCE",
+  "neighborOrder": "NEAREST",
+  "siteMemberKind": "LINE_SEGMENT",
+  "metricParameter": 1,
+  "memberParameter": 3,
+  "clusters": [
+    {
+      "name": "Azure",
+      "color": {
+        "r": 0.3325,
+        "g": 0.5126840716816397,
+        "b": 0.95,
+        "opacity": 1.0
+      },
+      "members": [
+        {
+          "kind": "POLYGON",
+          "xs": [
+            -94.0,
+            -206.0,
+            -16.0,
+            101.0
+          ],
+          "ys": [
+            140.0,
+            3.0,
+            -132.0,
+            49.0
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Lime",
+      "color": {
+        "r": 0.692868143363278,
+        "g": 0.95,
+        "b": 0.3325,
+        "opacity": 1.0
+      },
+      "members": [
+        {
+          "kind": "POLYGON",
+          "xs": [
+            202.0,
+            -47.0,
+            223.0,
+            323.0,
+            27.0,
+            268.0
+          ],
+          "ys": [
+            -190.0,
+            -269.0,
+            -222.0,
+            60.0,
+            128.0,
+            45.0
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Teal",
+      "color": {
+        "r": 0.3325,
+        "g": 0.95,
+        "b": 0.846763713273444,
+        "opacity": 1.0
+      },
+      "members": [
+        {
+          "kind": "POLYGON",
+          "xs": [
+            202.0,
+            139.0,
+            192.0
+          ],
+          "ys": [
+            -18.0,
+            -52.0,
+            -105.0
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Red",
+      "color": {
+        "r": 0.95,
+        "g": 0.3325,
+        "b": 0.3325,
+        "opacity": 1.0
+      },
+      "members": [
+        {
+          "kind": "LINE_SEGMENT",
+          "ax": -281.0,
+          "ay": 206.0,
+          "bx": -350.0,
+          "by": -293.0
+        },
+        {
+          "kind": "LINE_SEGMENT",
+          "ax": -350.0,
+          "ay": -293.0,
+          "bx": -87.0,
+          "by": 0.0
+        },
+        {
+          "kind": "LINE_SEGMENT",
+          "ax": 5.0,
+          "ay": 300.0,
+          "bx": -281.0,
+          "by": 206.0
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,131 @@
+{
+  "version": "1",
+  "name": "Nearest ellipse",
+  "metricKind": "MINIMUM_DISTANCE",
+  "neighborOrder": "NEAREST",
+  "siteMemberKind": "ELLIPSE",
+  "metricParameter": 1,
+  "memberParameter": 4,
+  "clusters": [
+    {
+      "name": "Azure",
+      "color": {
+        "r": 0.3325,
+        "g": 0.5126840716816397,
+        "b": 0.95,
+        "opacity": 1.0
+      },
+      "members": [
+        {
+          "kind": "ELLIPSE",
+          "ax": -187.0,
+          "ay": -80.0,
+          "bx": -85.0,
+          "by": -326.0,
+          "hx": -201.0,
+          "hy": -289.0
+        }
+      ]
+    },
+    {
+      "name": "Lime",
+      "color": {
+        "r": 0.692868143363278,
+        "g": 0.95,
+        "b": 0.3325,
+        "opacity": 1.0
+      },
+      "members": [
+        {
+          "kind": "ELLIPSE",
+          "ax": 56.0,
+          "ay": 56.0,
+          "bx": -50.0,
+          "by": -90.0,
+          "hx": -42.0,
+          "hy": -84.0
+        }
+      ]
+    },
+    {
+      "name": "Magenta",
+      "color": {
+        "r": 0.95,
+        "g": 0.3325,
+        "b": 0.8730522150449176,
+        "opacity": 1.0
+      },
+      "members": [
+        {
+          "kind": "ELLIPSE",
+          "ax": 149.0,
+          "ay": 22.0,
+          "bx": 156.0,
+          "by": 269.0,
+          "hx": 169.0,
+          "hy": -6.0
+        }
+      ]
+    },
+    {
+      "name": "Teal",
+      "color": {
+        "r": 0.3325,
+        "g": 0.95,
+        "b": 0.846763713273444,
+        "opacity": 1.0
+      },
+      "members": [
+        {
+          "kind": "ELLIPSE",
+          "ax": 275.3977481387891,
+          "ay": -182.59829669813956,
+          "bx": 142.0,
+          "by": 72.0,
+          "hx": 234.0,
+          "hy": 42.0
+        }
+      ]
+    },
+    {
+      "name": "Amber",
+      "color": {
+        "r": 0.95,
+        "g": 0.6665796415918046,
+        "b": 0.3325,
+        "opacity": 1.0
+      },
+      "members": [
+        {
+          "kind": "ELLIPSE",
+          "ax": -365.0,
+          "ay": 109.0,
+          "bx": -361.0,
+          "by": -199.0,
+          "hx": -294.66269859659894,
+          "hy": -22.784341066356276
+        }
+      ]
+    },
+    {
+      "name": "Indigo",
+      "color": {
+        "r": 0.4863955699101653,
+        "g": 0.3325,
+        "b": 0.95,
+        "opacity": 1.0
+      },
+      "members": [
+        {
+          "kind": "ELLIPSE",
+          "ax": -340.0,
+          "ay": -19.0,
+          "bx": -388.0,
+          "by": -85.0,
+          "hx": -347.0,
+          "hy": 10.0
+        }
+      ]
+    }
+  ]
+}

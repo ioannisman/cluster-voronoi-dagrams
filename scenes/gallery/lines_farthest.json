@@ -1,0 +1,83 @@
+{
+  "version": "1",
+  "name": "Farthest line",
+  "metricKind": "MINIMUM_DISTANCE",
+  "neighborOrder": "FARTHEST",
+  "siteMemberKind": "LINE",
+  "metricParameter": 1,
+  "memberParameter": 4,
+  "clusters": [
+    {
+      "name": "Lime",
+      "color": {
+        "r": 0.692868143363278,
+        "g": 0.95,
+        "b": 0.3325,
+        "opacity": 1.0
+      },
+      "members": [
+        {
+          "kind": "LINE",
+          "px": -16.0,
+          "py": -170.0,
+          "qx": -110.0,
+          "qy": -26.0
+        }
+      ]
+    },
+    {
+      "name": "Magenta",
+      "color": {
+        "r": 0.95,
+        "g": 0.3325,
+        "b": 0.8730522150449176,
+        "opacity": 1.0
+      },
+      "members": [
+        {
+          "kind": "LINE",
+          "px": -181.0,
+          "py": -38.0,
+          "qx": 223.0,
+          "qy": 17.0
+        }
+      ]
+    },
+    {
+      "name": "Teal",
+      "color": {
+        "r": 0.3325,
+        "g": 0.95,
+        "b": 0.846763713273444,
+        "opacity": 1.0
+      },
+      "members": [
+        {
+          "kind": "LINE",
+          "px": 316.0,
+          "py": 90.0,
+          "qx": -164.0,
+          "qy": 133.0
+        }
+      ]
+    },
+    {
+      "name": "Amber",
+      "color": {
+        "r": 0.95,
+        "g": 0.6665796415918046,
+        "b": 0.3325,
+        "opacity": 1.0
+      },
+      "members": [
+        {
+          "kind": "LINE",
+          "px": 301.0,
+          "py": 203.0,
+          "qx": 87.0,
+          "qy": -116.0
+        }
+      ]
+    }
+  ]
+}

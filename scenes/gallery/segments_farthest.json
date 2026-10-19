@@ -1,0 +1,137 @@
+{
+  "version": "1",
+  "name": "Farthest segment",
+  "metricKind": "MINIMUM_DISTANCE",
+  "neighborOrder": "FARTHEST",
+  "siteMemberKind": "LINE_SEGMENT",
+  "metricParameter": 1,
+  "memberParameter": 3,
+  "clusters": [
+    {
+      "name": "Indigo",
+      "color": {
+        "r": 0.4863955699101653,
+        "g": 0.3325,
+        "b": 0.95,
+        "opacity": 1.0
+      },
+      "members": [
+        {
+          "kind": "LINE_SEGMENT",
+          "ax": 195.0,
+          "ay": 117.0,
+          "bx": -171.0,
+          "by": 53.0
+        }
+      ]
+    },
+    {
+      "name": "Azure",
+      "color": {
+        "r": 0.3325,
+        "g": 0.5126840716816397,
+        "b": 0.95,
+        "opacity": 1.0
+      },
+      "members": [
+        {
+          "kind": "LINE_SEGMENT",
+          "ax": -285.0,
+          "ay": 253.0,
+          "bx": 152.0,
+          "by": 266.0
+        }
+      ]
+    },
+    {
+      "name": "Lime",
+      "color": {
+        "r": 0.692868143363278,
+        "g": 0.95,
+        "b": 0.3325,
+        "opacity": 1.0
+      },
+      "members": [
+        {
+          "kind": "LINE_SEGMENT",
+          "ax": 41.0,
+          "ay": 187.0,
+          "bx": -175.0,
+          "by": -77.0
+        }
+      ]
+    },
+    {
+      "name": "Magenta",
+      "color": {
+        "r": 0.95,
+        "g": 0.3325,
+        "b": 0.8730522150449176,
+        "opacity": 1.0
+      },
+      "members": [
+        {
+          "kind": "LINE_SEGMENT",
+          "ax": 127.82204694072107,
+          "ay": -181.67795155322423,
+          "bx": -4.0,
+          "by": 195.0
+        }
+      ]
+    },
+    {
+      "name": "Teal",
+      "color": {
+        "r": 0.3325,
+        "g": 0.95,
+        "b": 0.846763713273444,
+        "opacity": 1.0
+      },
+      "members": [
+        {
+          "kind": "LINE_SEGMENT",
+          "ax": 268.0,
+          "ay": -72.0,
+          "bx": 386.0,
+          "by": 205.0
+        }
+      ]
+    },
+    {
+      "name": "Amber",
+      "color": {
+        "r": 0.95,
+        "g": 0.6665796415918046,
+        "b": 0.3325,
+        "opacity": 1.0
+      },
+      "members": [
+        {
+          "kind": "LINE_SEGMENT",
+          "ax": -235.0,
+          "ay": 267.0,
+          "bx": -296.0,
+          "by": -299.0
+        }
+      ]
+    },
+    {
+      "name": "Indigo",
+      "color": {
+        "r": 0.4863955699101653,
+        "g": 0.3325,
+        "b": 0.95,
+        "opacity": 1.0
+      },
+      "members": [
+        {
+          "kind": "LINE_SEGMENT",
+          "ax": -157.0,
+          "ay": -76.0,
+          "bx": -18.0,
+          "by": -138.0
+        }
+      ]
+    }
+  ]
+}

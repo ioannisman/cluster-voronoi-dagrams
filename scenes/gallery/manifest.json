@@ -2,6 +2,19 @@
   "files": [
     "default_cvd.json",
     "point_clusters.json",
-    "k_ellipses.json"
+    "points_nearest.json",
+    "segments_nearest.json",
+    "polygons_nearest.json",
+    "lines_nearest.json",
+    "circles_nearest.json",
+    "ellipses_nearest.json",
+    "k_ellipses_nearest.json",
+    "points_farthest.json",
+    "segments_farthest.json",
+    "polygons_farthest.json",
+    "lines_farthest.json",
+    "circles_farthest.json",
+    "ellipses_farthest.json",
+    "k_ellipses_farthest.json"
   ]
 }

@@ -1,0 +1,96 @@
+{
+  "version": "1",
+  "name": "Nearest circle",
+  "metricKind": "MINIMUM_DISTANCE",
+  "neighborOrder": "NEAREST",
+  "siteMemberKind": "CIRCLE",
+  "metricParameter": 1,
+  "memberParameter": 4,
+  "clusters": [
+    {
+      "name": "Red",
+      "color": {
+        "r": 0.95,
+        "g": 0.3325,
+        "b": 0.3325,
+        "opacity": 1.0
+      },
+      "members": [
+        {
+          "kind": "CIRCLE",
+          "cx": -10.0,
+          "cy": -54.0,
+          "radius": 354.13274347340433
+        }
+      ]
+    },
+    {
+      "name": "Azure",
+      "color": {
+        "r": 0.3325,
+        "g": 0.5126840716816397,
+        "b": 0.95,
+        "opacity": 1.0
+      },
+      "members": [
+        {
+          "kind": "CIRCLE",
+          "cx": -328.0,
+          "cy": -32.0,
+          "radius": 113.56936206565572
+        }
+      ]
+    },
+    {
+      "name": "Lime",
+      "color": {
+        "r": 0.692868143363278,
+        "g": 0.95,
+        "b": 0.3325,
+        "opacity": 1.0
+      },
+      "members": [
+        {
+          "kind": "CIRCLE",
+          "cx": 104.0,
+          "cy": -83.0,
+          "radius": 90.37698822156003
+        }
+      ]
+    },
+    {
+      "name": "Magenta",
+      "color": {
+        "r": 0.95,
+        "g": 0.3325,
+        "b": 0.8730522150449176,
+        "opacity": 1.0
+      },
+      "members": [
+        {
+          "kind": "CIRCLE",
+          "cx": 105.0,
+          "cy": 182.0,
+          "radius": 15.0
+        }
+      ]
+    },
+    {
+      "name": "Teal",
+      "color": {
+        "r": 0.3325,
+        "g": 0.95,
+        "b": 0.846763713273444,
+        "opacity": 1.0
+      },
+      "members": [
+        {
+          "kind": "CIRCLE",
+          "cx": 228.0,
+          "cy": 36.0,
+          "radius": 51.35172830587107
+        }
+      ]
+    }
+  ]
+}
