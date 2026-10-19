@@ -311,23 +311,42 @@ public final class SceneState {
         return c.add(Vector.polar(radius, angle));
     }
 
-    private ClusterSite defaultCluster(int index) {
-        double hue = (360 * index * 0.618033988749895) % 360;
+    private ClusterSite defaultCluster(int placementIndex) {
+        int colorIndex = availableColorIndex();
+        double hue = (360.0 * colorIndex * 0.618033988749895) % 360.0;
         Rgba color = Rgba.hsb(hue, 0.65, 0.95);
-        double x = -280 + (index % 5) * 140;
-        double y = -200 + (index / 5) * 140;
+        double x = -280 + (placementIndex % 5) * 140;
+        double y = -200 + (placementIndex / 5) * 140;
         Vector center = Vector.xy(x, y);
         ClusterMember first = SiteMemberFactory.createDefault(
                 siteMemberKind,
-                index,
+                placementIndex,
                 0,
                 center,
                 clampedMemberParameter()
         );
         return new ClusterSite(
-                ClusterNaming.forNewCluster(index),
+                ClusterNaming.forNewCluster(colorIndex),
                 color,
                 List.of(first)
         );
+    }
+
+    /** First palette slot whose name is not already used by a cluster in the scene. */
+    private int availableColorIndex() {
+        for (int index = 0; index < MAX_CLUSTERS * 2; index++) {
+            String name = ClusterNaming.forNewCluster(index);
+            boolean used = false;
+            for (ClusterSite cluster : clusters) {
+                if (name.equals(cluster.name())) {
+                    used = true;
+                    break;
+                }
+            }
+            if (!used) {
+                return index;
+            }
+        }
+        return clusters.size();
     }
 }

@@ -8,6 +8,7 @@ import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -210,5 +211,28 @@ class SceneStateTest {
         KEllipseMember added = assertInstanceOf(KEllipseMember.class, state.clusters().get(0).members().get(1));
         assertEquals(5, added.focusCount());
         assertEquals(6, added.handleCount());
+    }
+
+    @Test
+    void addedClusterDoesNotCopyAColorThatIsStillPresent() {
+        SceneState state = new SceneState();
+        state.clusters().clear();
+        state.siteMemberKind = SiteMemberKind.POINT;
+        state.numberOfClusters = 3;
+        state.ensureClusterCountMatchesGadget();
+        Rgba removed = state.clusters().get(1).color();
+        String keptName = state.clusters().get(2).name();
+        Rgba kept = state.clusters().get(2).color();
+        assertTrue(state.removeClusterAt(1));
+
+        state.numberOfClusters = 3;
+        state.ensureClusterCountMatchesGadget();
+
+        Rgba added = state.clusters().get(2).color();
+        assertEquals(removed.r(), added.r(), 1e-9);
+        assertEquals(removed.g(), added.g(), 1e-9);
+        assertEquals(removed.b(), added.b(), 1e-9);
+        assertNotEquals(kept.r(), added.r());
+        assertNotEquals(keptName, state.clusters().get(2).name());
     }
 }
